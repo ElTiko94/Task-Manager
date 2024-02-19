@@ -20,34 +20,14 @@ class Task:
 
 
 
-# Functions
-def add_task(rt, task, window):
-    task_name_field = tk.StringVar()
-    task_entry = tk.Entry(rt, textvariable=task_name_field)
-    task_entry.pack()
-
-    confirm_button = tk.Button(rt, text="Confirm", command=lambda: create_task_button(task_entry, confirm_button, rt, task, window))
-    confirm_button.pack()
-
-
-def create_task_button(task_entry, confirm_button, rt, task, window):
-    task_name = task_entry.get()
-    task_entry.destroy()
-    confirm_button.destroy()
-
-    new_task = Task(task_name)
-    task.add_sub_task(new_task)
-    window.refresh_window()
-
-
 class Window:
-    def __init__(self, root, task):
-        self.root = root
+    def __init__(self, rt, task):
+        self.root = rt
         self.task_list = task.get_sub_tasks()
         self.name = task.name
 
         tk.Label(self.root, text=f"Sub-tasks for {self.name}: ").pack()
-        add_task_button = tk.Button(self.root, text="Add Task", command=lambda: add_task(self.root, task, self))
+        add_task_button = tk.Button(self.root, text="Add Task", command=lambda: self.add_task(task))
         add_task_button.pack()
 
         self.listbox = tk.Listbox(self.root)
@@ -66,6 +46,31 @@ class Window:
         self.refresh_window()
 
     # ...
+
+    def add_task(self, task):
+        task_name_field = tk.StringVar()
+        task_entry = tk.Entry(self.root, textvariable=task_name_field)
+        task_entry.pack()
+
+        confirm_button = tk.Button(self.root, text="Confirm", command=lambda: self.create_task_button(task_entry, confirm_button, task))
+        confirm_button.pack()
+
+
+    def create_task_button(self, task_entry, confirm_button, task):
+        task_name = task_entry.get()
+        task_entry.destroy()
+        confirm_button.destroy()
+
+        new_task = Task(task_name)
+        task.add_sub_task(new_task)
+        self.refresh_window()
+
+    def on_closing(main_tasks):
+        save_changes = tkMessageBox.askyesno("Quit", "Save your modification?")
+        if save_changes:
+            with open("object.pkl", "wb") as f:
+                pickle.dump(main_tasks, f)
+        root.destroy()
 
     def view_subtasks(self):
         selected_index = self.listbox.curselection()
@@ -113,13 +118,6 @@ class Window:
 
 
 # Main program
-def on_closing():
-    save_changes = tkMessageBox.askyesno("Quit", "Save your modification?")
-    if save_changes:
-        with open("object.pkl", "wb") as f:
-            pickle.dump(main_tasks, f)
-    root.destroy()
-
 
 if __name__ == "__main__":
     root = tk.Tk()
@@ -131,5 +129,5 @@ if __name__ == "__main__":
         main_tasks = Task("Main")
 
     window = Window(root, main_tasks)
-    root.protocol("WM_DELETE_WINDOW", on_closing)
+    root.protocol("WM_DELETE_WINDOW", lambda: Window.on_closing(main_tasks))
     root.mainloop()
