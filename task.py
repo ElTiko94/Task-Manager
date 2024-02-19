@@ -103,31 +103,32 @@ class Window:
         self.refresh_window()
 
     def edit_task(self):
-        print("Editing...")
         selected_index = self.listbox.curselection()
         if not selected_index:
             return
 
         selected_task = self.task_list[selected_index[0]]
 
-        print(selected_task)
-
-        edit_window = tk.Toplevel(self.root)
-        edit_window.title("Edit Task")
-
         task_name_field = tk.StringVar()
         task_name_field.set(selected_task.name)
-        task_entry = tk.Entry(edit_window, textvariable=task_name_field)
+        task_entry = tk.Entry(self.root, textvariable=task_name_field)
         task_entry.pack()
 
-        def confirm_edit():
-            new_name = task_name_field.get()
-            selected_task.name = new_name
-            self.refresh_window()
-            edit_window.destroy()
-
-        confirm_button = tk.Button(edit_window, text="Confirm", command=confirm_edit)
+        confirm_button = tk.Button(self.root, text="Confirm", command=lambda: self.confirm_edit(task_entry, confirm_button, selected_task))
         confirm_button.pack()
+
+
+
+    def confirm_edit(self, task_name_field, confirm_button, selected_task):
+        new_name = task_name_field.get()
+        selected_task.name = new_name
+
+        task_name_field.destroy()
+        confirm_button.destroy()
+        self.refresh_window()
+        
+
+
 
     def refresh_window(self):
         self.listbox.delete(0, tk.END)
