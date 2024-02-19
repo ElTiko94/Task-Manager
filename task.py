@@ -9,6 +9,10 @@ class Task:
         self.name = name
         self.sub_tasks = sub_tasks if sub_tasks is not None else []
 
+    def __str__(self):
+
+        return self.name + " {" + self.print_subtasks() + "}"
+
     def add_sub_task(self, task):
         self.sub_tasks.append(task)
 
@@ -17,6 +21,16 @@ class Task:
 
     def get_sub_tasks(self):
         return self.sub_tasks
+
+    def print_subtasks(self):
+        output = ""
+        for subtask in self.sub_tasks:
+            if subtask.sub_tasks is not None:
+                output += " " + subtask.name + " {"+subtask.print_subtasks()+"}"
+            else :
+                output += " "+subtask.name+" "
+        return output
+
 
 
 
@@ -54,6 +68,7 @@ class Window:
 
         confirm_button = tk.Button(self.root, text="Confirm", command=lambda: self.create_task_button(task_entry, confirm_button, task))
         confirm_button.pack()
+        print(str(self))
 
 
     def create_task_button(self, task_entry, confirm_button, task):
@@ -88,11 +103,14 @@ class Window:
         self.refresh_window()
 
     def edit_task(self):
+        print("Editing...")
         selected_index = self.listbox.curselection()
         if not selected_index:
             return
 
         selected_task = self.task_list[selected_index[0]]
+
+        print(selected_task)
 
         edit_window = tk.Toplevel(self.root)
         edit_window.title("Edit Task")
@@ -110,6 +128,7 @@ class Window:
 
         confirm_button = tk.Button(edit_window, text="Confirm", command=confirm_edit)
         confirm_button.pack()
+
     def refresh_window(self):
         self.listbox.delete(0, tk.END)
         for task in self.task_list:
@@ -131,3 +150,4 @@ if __name__ == "__main__":
     window = Window(root, main_tasks)
     root.protocol("WM_DELETE_WINDOW", lambda: Window.on_closing(main_tasks))
     root.mainloop()
+    print(main_tasks)
