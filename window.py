@@ -67,24 +67,31 @@ class Window:
         if not selected_index:
             return
 
-        selected_task = self.task_list[selected_index[0]]
+        # Clear any existing editing interface
+        if hasattr(self, 'edit_frame'):
+            self.edit_frame.destroy()
 
-        edit_window = tk.Toplevel(self.root)
-        edit_window.title("Edit Task")
+        # Create a frame to contain the editing interface
+        self.edit_frame = tk.Frame(self.root)
+        self.edit_frame.pack()
 
         task_name_field = tk.StringVar()
-        task_name_field.set(selected_task.name)
-        task_entry = tk.Entry(edit_window, textvariable=task_name_field)
+        task_name_field.set(self.task_list[selected_index[0]].name)
+        task_entry = tk.Entry(self.edit_frame, textvariable=task_name_field)
         task_entry.pack()
 
-        def confirm_edit():
-            new_name = task_name_field.get()
-            selected_task.name = new_name
-            self.refresh_window()
-            edit_window.destroy()
-
-        confirm_button = tk.Button(edit_window, text="Confirm", command=confirm_edit)
+        confirm_button = tk.Button(self.edit_frame, text="Confirm", command=lambda: self.confirm_edit(task_name_field, selected_index))
         confirm_button.pack()
+
+    # Function to handle task editing and updating the listbox
+    def confirm_edit(self, task_name_field, selected_index):
+        new_name = task_name_field.get()
+        print(self.task_list[selected_index[0]].name)
+        print(new_name)
+        self.task_list[selected_index[0]].name = new_name
+        self.refresh_window()
+        self.edit_frame.destroy()  # Destroy the editing interface frame
+
     def refresh_window(self):
         self.listbox.delete(0, tk.END)
         for task in self.task_list:
