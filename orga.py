@@ -3,6 +3,7 @@ from tkinter import messagebox as tkMessageBox
 import pickle
 from task import Task
 from window import Window
+from controller import TaskController
 
 
 # Main program
@@ -23,6 +24,7 @@ if __name__ == "__main__":
     except FileNotFoundError:
         main_tasks = Task("Main")
 
-    window = Window(root, main_tasks)
+    controller = TaskController(main_tasks)
+    window = Window(root, controller)
     root.protocol("WM_DELETE_WINDOW", on_closing)
     root.mainloop()
