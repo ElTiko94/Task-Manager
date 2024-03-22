@@ -1,11 +1,10 @@
 # Task Class
 class Task:
-    def __init__(self, name, sub_tasks=[]):
+    def __init__(self, name, sub_tasks=None):
         self.name = name
         self.sub_tasks = sub_tasks if sub_tasks is not None else []
 
     def __str__(self):
-
         return self.name + " {" + self.print_subtasks() + "}" if self.print_subtasks() is not None else self.name
 
     def add_sub_task(self, task):

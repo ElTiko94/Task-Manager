@@ -31,9 +31,11 @@ class Window:
         self.refresh_window()
 
     # ...
-
     def view_subtasks(self):
         selected_index = self.listbox.curselection()
+        if not selected_index:
+            return
+        
         selected_task = self.controller.get_sub_tasks()[selected_index[0]]
         r = tk.Tk()
         window = Window(r, TaskController(selected_task))
