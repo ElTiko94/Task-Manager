@@ -16,7 +16,7 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 ## Installation
 1. Clone or download the repository to your local machine.
 2. Ensure you have Python installed on your system.
-3. Run `main.py` to start the application.
+3. Run `Start.bat` to start the application.
 
 ## Usage
 1. **Adding a Task**: Click on the "Add Task" button and enter the name of the task in the text field. Click "Confirm" to add the task.
