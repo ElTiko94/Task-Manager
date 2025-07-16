@@ -426,7 +426,11 @@ class Window:
         self.listbox.delete(0, tk.END)
         for task in self.controller.get_sub_tasks():
             if isinstance(task, Task):
-                display = str(task)
+                # Start with the task name only so sub-task information
+                # isn't included in the display
+                display = task.name
+                if task.completed:
+                    display += " (Completed)"
                 if getattr(task, "due_date", None):
                     display += f" - Due: {task.due_date}"
                 if getattr(task, "priority", None) is not None:
