@@ -238,6 +238,37 @@ def test_edit_subtask_prefills_fields(monkeypatch):
     assert entries[2].get() == '5'
 
 
+def test_edit_task_keeps_vars(monkeypatch):
+    """Dialog should keep references to StringVars so values stay visible."""
+    captured = {}
+
+    class CapRoot(DummyRoot):
+        pass
+
+    def fake_top(parent=None):
+        dlg = CapRoot()
+        captured['dlg'] = dlg
+        return dlg
+
+    fake_tk = DummyTkModule()
+    fake_tk.Toplevel = fake_top
+    monkeypatch.setattr(window, 'tk', fake_tk)
+    monkeypatch.setattr(window, 'ttk', fake_tk)
+    monkeypatch.setattr(window, 'DateEntry', DummyEntry)
+    root = DummyRoot()
+    controller = TaskController(Task('Main'))
+    controller.add_task('X', due_date='2023-01-01', priority=1)
+    win = window.Window(root, controller)
+    win.listbox.selection = (0,)
+    win.edit_task()
+
+    dlg = captured['dlg']
+    assert hasattr(dlg, 'task_name_var')
+    assert dlg.task_name_var.get() == 'X'
+    assert dlg.due_date_var.get() == '2023-01-01'
+    assert dlg.priority_var.get() == '1'
+
+
 def test_sort_button(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task('Low', priority=5)
