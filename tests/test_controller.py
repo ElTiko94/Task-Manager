@@ -39,3 +39,12 @@ def test_add_task_with_extras_and_completion():
     assert c.get_sub_tasks()[0].completed
     c.mark_task_incomplete(0)
     assert not c.get_sub_tasks()[0].completed
+
+
+def test_sort_tasks_by_priority():
+    c = create_controller()
+    c.add_task('Low', priority=5)
+    c.add_task('High', priority=1)
+    c.add_task('None')
+    c.sort_tasks_by_priority()
+    assert [t.name for t in c.get_sub_tasks()] == ['High', 'Low', 'None']

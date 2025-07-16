@@ -24,6 +24,7 @@ class TaskController:
         delete_task: Deletes a task at the specified index.
         get_task_name: Returns the name of the task.
         get_sub_tasks: Returns the list of sub-tasks associated with the task.
+        sort_tasks_by_priority: Sort tasks by their priority value.
     """
 
     def __init__(self, task):
@@ -98,3 +99,7 @@ class TaskController:
             list of Task: The list of sub-tasks associated with the task.
         """
         return self.task.get_sub_tasks()
+
+    def sort_tasks_by_priority(self):
+        """Sort the controller's sub tasks by priority (None values last)."""
+        self.task.sub_tasks.sort(key=lambda t: (t.priority is None, t.priority))
