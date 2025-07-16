@@ -65,6 +65,7 @@ class DummyListbox(DummyWidget):
         self.items = []
         self.selection = ()
         self.bindings = {}
+        self.config_called_with = {}
     def delete(self, start, end):
         self.items = []
     def insert(self, index, item):
@@ -73,6 +74,20 @@ class DummyListbox(DummyWidget):
         return self.selection
     def bind(self, event, func):
         self.bindings[event] = func
+    def yview(self, *args):
+        self.yview_args = args
+    def config(self, **kwargs):
+        self.config_called_with.update(kwargs)
+    configure = config
+
+
+class DummyScrollbar(DummyWidget):
+    def __init__(self, *args, orient=None, command=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.orient = orient
+        self.command = command
+    def set(self, *args):
+        self.set_args = args
 
 
 class DummyFrame(DummyWidget):
@@ -85,6 +100,7 @@ class DummyTkModule:
     Button = DummyWidget
     Entry = DummyEntry
     Listbox = DummyListbox
+    Scrollbar = DummyScrollbar
     StringVar = DummyStringVar
     IntVar = DummyIntVar
     Checkbutton = DummyCheckbutton
@@ -110,6 +126,14 @@ def test_window_initial_refresh(monkeypatch):
     win.controller.add_task('Task1')
     win.refresh_window()
     assert win.listbox.items == ['Task1']
+
+
+def test_scrollbar_connected(monkeypatch):
+    win = setup_window(monkeypatch)
+    assert isinstance(win.scrollbar, DummyScrollbar)
+    assert win.scrollbar.command == win.listbox.yview
+    cmd = win.listbox.config_called_with.get('yscrollcommand')
+    assert getattr(cmd, '__self__', None) is win.scrollbar
 
 
 def test_create_task_button(monkeypatch):

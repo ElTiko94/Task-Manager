@@ -74,6 +74,13 @@ class Window:
 
         self.listbox = ttk.Listbox(self.main_frame)
         self.listbox.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=5)
+
+        self.scrollbar = ttk.Scrollbar(
+            self.main_frame, orient="vertical", command=self.listbox.yview
+        )
+        self.scrollbar.grid(row=2, column=3, sticky="ns")
+        self.listbox.configure(yscrollcommand=self.scrollbar.set)
+
         # Bind double-click on a task to open its subtasks
         self.listbox.bind("<Double-Button-1>", lambda e: self.view_subtasks())
 
