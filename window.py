@@ -10,6 +10,10 @@ Usage:
 
 import tkinter as tk
 import tkinter.ttk as ttk
+try:
+    from tkcalendar import DateEntry
+except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
+    DateEntry = ttk.Entry
 
 if not hasattr(ttk, "Listbox"):
     ttk.Listbox = tk.Listbox
@@ -141,7 +145,7 @@ class Window:
         task_entry = ttk.Entry(form, textvariable=task_name_field)
         task_entry.grid(row=0, column=1)
         ttk.Label(form, text="Due Date:").grid(row=1, column=0, sticky="e")
-        due_date_entry = ttk.Entry(form, textvariable=due_date_field)
+        due_date_entry = DateEntry(form, textvariable=due_date_field)
         due_date_entry.grid(row=1, column=1)
         ttk.Label(form, text="Priority:").grid(row=2, column=0, sticky="e")
         priority_entry = ttk.Entry(form, textvariable=priority_field)
@@ -231,7 +235,7 @@ class Window:
         task_entry = ttk.Entry(form, textvariable=task_name_field)
         task_entry.grid(row=0, column=1)
         ttk.Label(form, text="Due Date:").grid(row=1, column=0, sticky="e")
-        due_date_entry = ttk.Entry(form, textvariable=due_date_field)
+        due_date_entry = DateEntry(form, textvariable=due_date_field)
         due_date_entry.grid(row=1, column=1)
         ttk.Label(form, text="Priority:").grid(row=2, column=0, sticky="e")
         priority_entry = ttk.Entry(form, textvariable=priority_field)
