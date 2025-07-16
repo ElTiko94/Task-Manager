@@ -50,6 +50,9 @@ class Window:
         add_task_button = tk.Button(self.root, text="Add Task", command= self.add_task)
         add_task_button.pack()
 
+        sort_btn = tk.Button(self.root, text="Sort by Priority", command=self.sort_tasks_by_priority)
+        sort_btn.pack()
+
         self.listbox = tk.Listbox(self.root)
         self.listbox.pack()
 
@@ -239,6 +242,11 @@ class Window:
             self.controller.mark_task_completed(idx)
         else:
             self.controller.mark_task_incomplete(idx)
+        self.refresh_window()
+
+    def sort_tasks_by_priority(self):
+        """Sort tasks by priority using the controller and refresh the view."""
+        self.controller.sort_tasks_by_priority()
         self.refresh_window()
 
     def refresh_window(self):

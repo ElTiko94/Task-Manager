@@ -143,3 +143,13 @@ def test_confirm_edit(monkeypatch):
     assert t.priority == 3
     assert t.completed
 
+
+def test_sort_button(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Low', priority=5)
+    win.controller.add_task('High', priority=1)
+    win.controller.add_task('None')
+    win.sort_tasks_by_priority()
+    assert [t.name for t in win.controller.get_sub_tasks()] == ['High', 'Low', 'None']
+    assert [item.split()[0] for item in win.listbox.items] == ['High', 'Low', 'None']
+
