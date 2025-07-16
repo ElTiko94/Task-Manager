@@ -10,10 +10,53 @@ Usage:
 
 import tkinter as tk
 import tkinter.ttk as ttk
+import datetime
+import calendar as _calendar
+
 try:
     from tkcalendar import DateEntry
 except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
-    DateEntry = ttk.Entry
+    class DateEntry(ttk.Entry):
+        """Simple date selector using only tkinter widgets."""
+
+        def __init__(self, master=None, **kwargs):
+            super().__init__(master, **kwargs)
+            self._popup = None
+            self.bind("<Button-1>", self._open_popup)
+
+        def _open_popup(self, _event=None):
+            if self._popup is not None:
+                return
+            self._popup = tk.Toplevel(self)
+            self._popup.transient(self)
+            self._popup.protocol("WM_DELETE_WINDOW", self._close_popup)
+
+            today = datetime.date.today()
+            cal = _calendar.monthcalendar(today.year, today.month)
+
+            for col, name in enumerate(["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]):
+                tk.Label(self._popup, text=name).grid(row=0, column=col)
+
+            for r, week in enumerate(cal, start=1):
+                for c, day in enumerate(week):
+                    if day == 0:
+                        continue
+                    b = tk.Button(
+                        self._popup,
+                        text=str(day),
+                        command=lambda d=day: self._select_date(today.year, today.month, d),
+                    )
+                    b.grid(row=r, column=c)
+
+        def _select_date(self, year, month, day):
+            self.delete(0, tk.END)
+            self.insert(0, str(datetime.date(year, month, day)))
+            self._close_popup()
+
+        def _close_popup(self):
+            if self._popup is not None:
+                self._popup.destroy()
+                self._popup = None
 
 if not hasattr(ttk, "Listbox"):
     ttk.Listbox = tk.Listbox
