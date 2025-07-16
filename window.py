@@ -82,7 +82,7 @@ class Window:
             return
 
         selected_task = self.controller.get_sub_tasks()[selected_index[0]]
-        r = tk.Tk()
+        r = tk.Toplevel(self.root)
         Window(r, TaskController(selected_task))
 
     def delete_task(self):
