@@ -73,7 +73,6 @@ class Window:
         self.root.resizable(True, True)
         self.refresh_window()
 
-    # ...
     def view_subtasks(self):
         """
         Opens a new window to view the sub-tasks of a selected task.
@@ -97,7 +96,6 @@ class Window:
         self.controller.delete_task(selected_index[0])
         self.refresh_window()
 
-    # Functions
     def add_task(self):
         """Displays a dialog to add a new task."""
         task_name_field = tk.StringVar()
@@ -212,7 +210,6 @@ class Window:
         )
         confirm_button.pack()
 
-    # Function to handle task editing and updating the listbox
     def confirm_edit(
         self,
         task_name_field,

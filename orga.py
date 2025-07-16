@@ -29,7 +29,7 @@ from controller import TaskController
 
 
 # Main program
-def on_closing(task,rt):
+def on_closing(task, rt):
     """Function to handle closing event of the application."""
     save_changes = tkMessageBox.askyesno("Quit", "Save your modification?")
     if save_changes:
