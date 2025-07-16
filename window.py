@@ -59,7 +59,7 @@ class Window:
         edit_button = tk.Button(self.root, text="Edit", command= self.edit_task)
         edit_button.pack()
 
-        dlt_btn = tk.Button(self.root, text="Delete", command=lambda: self.delete_task(controller))
+        dlt_btn = tk.Button(self.root, text="Delete", command=self.delete_task)
         dlt_btn.pack()
 
         self.root.resizable(True, True)
@@ -78,18 +78,15 @@ class Window:
         r = tk.Tk()
         Window(r, TaskController(selected_task))
 
-    def delete_task(self, controller):
+    def delete_task(self):
         """
         Deletes the selected task from the task controller.
-
-        Args:
-            controller (TaskController): The task controller managing the tasks.
         """
         selected_index = self.listbox.curselection()
         if not selected_index:
             return
 
-        controller.delete_task(selected_index[0])
+        self.controller.delete_task(selected_index[0])
         self.refresh_window()
 
     # Functions
