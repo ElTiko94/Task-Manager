@@ -96,7 +96,8 @@ except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
             if self._popup:
                 return
             self._popup = tk.Toplevel(self)
-            self._popup.wm_overrideredirect(True)
+            self._popup.transient(self)
+            self._popup.protocol("WM_DELETE_WINDOW", self._close_popup)
             cal = _SimpleCalendar(self._popup, self._var, self._close_popup)
             cal.pack()
             x = self.winfo_rootx()
@@ -231,6 +232,13 @@ class Window:
         priority_field = tk.StringVar()
         completed_var = tk.IntVar()
 
+        # Keep a reference on the dialog so these vars aren't garbage collected
+        # while the window is open
+        dialog.task_name_var = task_name_field
+        dialog.due_date_var = due_date_field
+        dialog.priority_var = priority_field
+        dialog.completed_var = completed_var
+
         form = ttk.Frame(dialog)
         form.grid(row=0, column=0, padx=10, pady=10)
 
@@ -313,6 +321,12 @@ class Window:
         due_date_field = tk.StringVar()
         priority_field = tk.StringVar()
         completed_var = tk.IntVar()
+        # Keep a reference on the dialog so these vars aren't garbage collected
+        # while the window is open
+        dialog.task_name_var = task_name_field
+        dialog.due_date_var = due_date_field
+        dialog.priority_var = priority_field
+        dialog.completed_var = completed_var
 
         task_name_field.set(task.name)
         if task.due_date:
