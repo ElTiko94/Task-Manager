@@ -488,6 +488,7 @@ class Window:
         hide_completed = bool(self.hide_completed_var.get()) if hasattr(self, "hide_completed_var") else False
 
         for idx, task in enumerate(self.controller.get_sub_tasks()):
+
             if not isinstance(task, Task):
                 continue
 
