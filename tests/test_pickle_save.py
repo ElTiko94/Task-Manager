@@ -3,7 +3,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import pickle
 import builtins
 from task import Task
-from orga import on_closing, tkMessageBox
+from orga import on_closing, load_tasks, tkMessageBox
 
 
 def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
@@ -42,3 +42,25 @@ def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
     assert loaded_sub.due_date == '2025-12-31'
     assert loaded_sub.priority == 1
     assert loaded_sub.completed
+
+
+def test_load_tasks_with_corrupt_pickle(tmp_path, monkeypatch):
+    bad_file = tmp_path / 'object.pkl'
+    bad_file.write_bytes(b'not a pickle')
+
+    original_open = builtins.open
+
+    def fake_open(path, mode='rb', *args, **kwargs):
+        if path == 'object.pkl':
+            return original_open(bad_file, mode, *args, **kwargs)
+        return original_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, 'open', fake_open)
+
+    warnings = []
+    monkeypatch.setattr(tkMessageBox, 'showwarning', lambda *a, **k: warnings.append(True))
+
+    task = load_tasks()
+    assert isinstance(task, Task)
+    assert task.name == 'Main'
+    assert warnings  # ensure warning was triggered
