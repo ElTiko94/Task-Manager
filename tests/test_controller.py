@@ -48,3 +48,12 @@ def test_sort_tasks_by_priority():
     c.add_task('None')
     c.sort_tasks_by_priority()
     assert [t.name for t in c.get_sub_tasks()] == ['High', 'Low', 'None']
+
+
+def test_sort_tasks_by_due_date():
+    c = create_controller()
+    c.add_task('Later', due_date='2025-01-01')
+    c.add_task('Sooner', due_date='2024-01-01')
+    c.add_task('NoDue')
+    c.sort_tasks_by_due_date()
+    assert [t.name for t in c.get_sub_tasks()] == ['Sooner', 'Later', 'NoDue']

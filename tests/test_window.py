@@ -207,6 +207,16 @@ def test_sort_button(monkeypatch):
     assert [item.split()[0] for item in win.listbox.items] == ['High', 'Low', 'None']
 
 
+def test_sort_by_due_date(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Later', due_date='2025-01-01')
+    win.controller.add_task('Sooner', due_date='2024-01-01')
+    win.controller.add_task('NoDue')
+    win.sort_tasks_by_due_date()
+    assert [t.name for t in win.controller.get_sub_tasks()] == ['Sooner', 'Later', 'NoDue']
+    assert [item.split()[0] for item in win.listbox.items] == ['Sooner', 'Later', 'NoDue']
+
+
 def test_double_click_opens_subtasks(monkeypatch):
     called = {}
 
