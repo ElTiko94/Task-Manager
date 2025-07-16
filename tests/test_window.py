@@ -201,6 +201,7 @@ def test_edit_task_prefills_fields(monkeypatch):
     controller = TaskController(Task('Main'))
     controller.add_task('Existing', due_date='2024-12-31', priority=2)
     win = window.Window(root, controller)
+    entries.clear()  # ignore widgets created during initialization
     win.listbox.selection = (0,)
     win.edit_task()
 
@@ -230,6 +231,7 @@ def test_edit_subtask_prefills_fields(monkeypatch):
     win = window.Window(root, controller)
     sub_root = DummyRoot()
     sub_win = window.Window(sub_root, TaskController(parent))
+    entries.clear()  # ignore widgets created during initialization
     sub_win.listbox.selection = (0,)
     sub_win.edit_task()
 
@@ -287,6 +289,26 @@ def test_sort_by_due_date(monkeypatch):
     win.sort_tasks_by_due_date()
     assert [t.name for t in win.controller.get_sub_tasks()] == ['Sooner', 'Later', 'NoDue']
     assert [item.split()[0] for item in win.listbox.items] == ['Sooner', 'Later', 'NoDue']
+
+
+def test_search_filter(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Hello')
+    win.controller.add_task('World')
+    win.controller.add_task('Help')
+    win.search_var.set('hel')
+    win.refresh_window()
+    assert [item.split()[0] for item in win.listbox.items] == ['Hello', 'Help']
+
+
+def test_hide_completed(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Done')
+    win.controller.add_task('Todo')
+    win.controller.mark_task_completed(0)
+    win.hide_completed_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.listbox.items] == ['Todo']
 
 
 def test_double_click_opens_subtasks(monkeypatch):
