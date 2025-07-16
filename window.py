@@ -9,6 +9,10 @@ Usage:
 """
 
 import tkinter as tk
+import tkinter.ttk as ttk
+
+if not hasattr(ttk, "Listbox"):
+    ttk.Listbox = tk.Listbox
 from task import Task
 from controller import TaskController
 
@@ -46,29 +50,47 @@ class Window:
         self.name = controller.get_task_name()
 
 
-        tk.Label(self.root, text=f"Sub-tasks for {self.name}: ").pack()
-        add_task_button = tk.Button(self.root, text="Add Task", command= self.add_task)
-        add_task_button.pack()
+        self.main_frame = ttk.Frame(self.root)
+        self.main_frame.grid(row=0, column=0, sticky="nsew")
 
-        sort_btn = tk.Button(self.root, text="Sort by Priority", command=self.sort_tasks_by_priority)
-        sort_btn.pack()
+        ttk.Label(
+            self.main_frame, text=f"Sub-tasks for {self.name}: "
+        ).grid(row=0, column=0, columnspan=3, pady=2)
 
-        sort_due_btn = tk.Button(self.root, text="Sort by Due Date", command=self.sort_tasks_by_due_date)
-        sort_due_btn.pack()
+        add_task_button = ttk.Button(
+            self.main_frame, text="Add Task", command=self.add_task
+        )
+        add_task_button.grid(row=1, column=0, sticky="ew", padx=2)
 
-        self.listbox = tk.Listbox(self.root)
-        self.listbox.pack()
+        sort_btn = ttk.Button(
+            self.main_frame, text="Sort by Priority", command=self.sort_tasks_by_priority
+        )
+        sort_btn.grid(row=1, column=1, sticky="ew", padx=2)
+
+        sort_due_btn = ttk.Button(
+            self.main_frame, text="Sort by Due Date", command=self.sort_tasks_by_due_date
+        )
+        sort_due_btn.grid(row=1, column=2, sticky="ew", padx=2)
+
+        self.listbox = ttk.Listbox(self.main_frame)
+        self.listbox.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=5)
         # Bind double-click on a task to open its subtasks
         self.listbox.bind("<Double-Button-1>", lambda e: self.view_subtasks())
 
-        view_subtasks_btn = tk.Button(self.root, text="View Subtasks", command= self.view_subtasks)
-        view_subtasks_btn.pack()
+        view_subtasks_btn = ttk.Button(
+            self.main_frame, text="View Subtasks", command=self.view_subtasks
+        )
+        view_subtasks_btn.grid(row=3, column=0, sticky="ew", padx=2, pady=2)
 
-        edit_button = tk.Button(self.root, text="Edit", command= self.edit_task)
-        edit_button.pack()
+        edit_button = ttk.Button(
+            self.main_frame, text="Edit", command=self.edit_task
+        )
+        edit_button.grid(row=3, column=1, sticky="ew", padx=2)
 
-        dlt_btn = tk.Button(self.root, text="Delete", command=self.delete_task)
-        dlt_btn.pack()
+        dlt_btn = ttk.Button(
+            self.main_frame, text="Delete", command=self.delete_task
+        )
+        dlt_btn.grid(row=3, column=2, sticky="ew", padx=2)
 
         self.root.resizable(True, True)
         self.refresh_window()
@@ -103,20 +125,23 @@ class Window:
         priority_field = tk.StringVar()
         completed_var = tk.IntVar()
 
-        tk.Label(self.root, text="Task Name:").pack()
-        task_entry = tk.Entry(self.root, textvariable=task_name_field)
-        task_entry.pack()
-        tk.Label(self.root, text="Due Date:").pack()
-        due_date_entry = tk.Entry(self.root, textvariable=due_date_field)
-        due_date_entry.pack()
-        tk.Label(self.root, text="Priority:").pack()
-        priority_entry = tk.Entry(self.root, textvariable=priority_field)
-        priority_entry.pack()
-        completed_check = tk.Checkbutton(self.root, text="Completed", variable=completed_var)
-        completed_check.pack()
+        form = ttk.Frame(self.main_frame)
+        form.grid(row=4, column=0, columnspan=3, pady=5)
 
-        confirm_button = tk.Button(
-            self.root,
+        ttk.Label(form, text="Task Name:").grid(row=0, column=0, sticky="e")
+        task_entry = ttk.Entry(form, textvariable=task_name_field)
+        task_entry.grid(row=0, column=1)
+        ttk.Label(form, text="Due Date:").grid(row=1, column=0, sticky="e")
+        due_date_entry = ttk.Entry(form, textvariable=due_date_field)
+        due_date_entry.grid(row=1, column=1)
+        ttk.Label(form, text="Priority:").grid(row=2, column=0, sticky="e")
+        priority_entry = ttk.Entry(form, textvariable=priority_field)
+        priority_entry.grid(row=2, column=1)
+        completed_check = tk.Checkbutton(form, text="Completed", variable=completed_var)
+        completed_check.grid(row=3, column=0, columnspan=2)
+
+        confirm_button = ttk.Button(
+            form,
             text="Confirm",
             command=lambda: self.create_task_button(
                 task_entry,
@@ -127,7 +152,7 @@ class Window:
                 confirm_button,
             ),
         )
-        confirm_button.pack()
+        confirm_button.grid(row=4, column=0, columnspan=2, pady=2)
 
     def create_task_button(
         self,
@@ -142,8 +167,8 @@ class Window:
         Creates a new task based on the entered name.
 
         Args:
-            task_entry (tk.Entry): The entry field containing the task name.
-            confirm_button (tk.Button): The confirm button for adding the task.
+            task_entry (ttk.Entry): The entry field containing the task name.
+            confirm_button (ttk.Button): The confirm button for adding the task.
         """
         task_name = task_entry.get()
         due_date = due_date_entry.get()
@@ -183,20 +208,23 @@ class Window:
             priority_field.set(str(task.priority))
         completed_var.set(1 if task.completed else 0)
 
-        tk.Label(self.root, text="Task Name:").pack()
-        task_entry = tk.Entry(self.root, textvariable=task_name_field)
-        task_entry.pack()
-        tk.Label(self.root, text="Due Date:").pack()
-        due_date_entry = tk.Entry(self.root, textvariable=due_date_field)
-        due_date_entry.pack()
-        tk.Label(self.root, text="Priority:").pack()
-        priority_entry = tk.Entry(self.root, textvariable=priority_field)
-        priority_entry.pack()
-        completed_check = tk.Checkbutton(self.root, text="Completed", variable=completed_var)
-        completed_check.pack()
+        form = ttk.Frame(self.main_frame)
+        form.grid(row=4, column=0, columnspan=3, pady=5)
 
-        confirm_button = tk.Button(
-            self.root,
+        ttk.Label(form, text="Task Name:").grid(row=0, column=0, sticky="e")
+        task_entry = ttk.Entry(form, textvariable=task_name_field)
+        task_entry.grid(row=0, column=1)
+        ttk.Label(form, text="Due Date:").grid(row=1, column=0, sticky="e")
+        due_date_entry = ttk.Entry(form, textvariable=due_date_field)
+        due_date_entry.grid(row=1, column=1)
+        ttk.Label(form, text="Priority:").grid(row=2, column=0, sticky="e")
+        priority_entry = ttk.Entry(form, textvariable=priority_field)
+        priority_entry.grid(row=2, column=1)
+        completed_check = tk.Checkbutton(form, text="Completed", variable=completed_var)
+        completed_check.grid(row=3, column=0, columnspan=2)
+
+        confirm_button = ttk.Button(
+            form,
             text="Confirm",
             command=lambda: self.confirm_edit(
                 task_entry,
@@ -208,7 +236,7 @@ class Window:
                 confirm_button,
             ),
         )
-        confirm_button.pack()
+        confirm_button.grid(row=4, column=0, columnspan=2, pady=2)
 
     def confirm_edit(
         self,
@@ -224,9 +252,9 @@ class Window:
         Confirms the edit of a task and updates the listbox.
 
         Args:
-            task_name_field (tk.Entry): The entry widget containing the new task name.
+            task_name_field (ttk.Entry): The entry widget containing the new task name.
             selected_index (int): The index of the task being edited.
-            confirm_button (tk.Button): The confirm button for editing the task.
+            confirm_button (ttk.Button): The confirm button for editing the task.
         """
         new_name = task_name_field.get()
         new_due = due_date_entry.get()

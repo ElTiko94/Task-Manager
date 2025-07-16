@@ -35,6 +35,8 @@ class DummyWidget:
         self.command = kwargs.get('command')
     def pack(self):
         pass
+    def grid(self, *args, **kwargs):
+        pass
     def destroy(self):
         pass
     def invoke(self):
@@ -73,6 +75,10 @@ class DummyListbox(DummyWidget):
         self.bindings[event] = func
 
 
+class DummyFrame(DummyWidget):
+    pass
+
+
 class DummyTkModule:
     END = 'end'
     Label = DummyWidget
@@ -82,11 +88,13 @@ class DummyTkModule:
     StringVar = DummyStringVar
     IntVar = DummyIntVar
     Checkbutton = DummyCheckbutton
+    Frame = DummyFrame
 
 
 def setup_window(monkeypatch):
     fake_tk = DummyTkModule()
     monkeypatch.setattr(window, 'tk', fake_tk)
+    monkeypatch.setattr(window, 'ttk', fake_tk)
     root = DummyRoot()
     controller = TaskController(Task('Main'))
     return window.Window(root, controller)
@@ -158,6 +166,7 @@ def test_edit_task_prefills_fields(monkeypatch):
     fake_tk = DummyTkModule()
     fake_tk.Entry = TrackedEntry
     monkeypatch.setattr(window, 'tk', fake_tk)
+    monkeypatch.setattr(window, 'ttk', fake_tk)
     root = DummyRoot()
     controller = TaskController(Task('Main'))
     controller.add_task('Existing', due_date='2024-12-31', priority=2)
@@ -181,6 +190,7 @@ def test_edit_subtask_prefills_fields(monkeypatch):
     fake_tk = DummyTkModule()
     fake_tk.Entry = TrackEntry
     monkeypatch.setattr(window, 'tk', fake_tk)
+    monkeypatch.setattr(window, 'ttk', fake_tk)
     root = DummyRoot()
     controller = TaskController(Task('Main'))
     parent = Task('Parent')
@@ -255,6 +265,7 @@ def test_view_subtasks_uses_toplevel(monkeypatch):
     fake_tk.Tk = fake_tk_root
 
     monkeypatch.setattr(window, 'tk', fake_tk)
+    monkeypatch.setattr(window, 'ttk', fake_tk)
 
     root = DummyRoot()
     controller = TaskController(Task('Main'))
