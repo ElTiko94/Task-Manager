@@ -487,7 +487,8 @@ class Window:
         search_term = self.search_var.get().lower().strip() if hasattr(self, "search_var") else ""
         hide_completed = bool(self.hide_completed_var.get()) if hasattr(self, "hide_completed_var") else False
 
-        for task in self.controller.get_sub_tasks():
+        for idx, task in enumerate(self.controller.get_sub_tasks()):
+
             if not isinstance(task, Task):
                 continue
 
@@ -505,3 +506,17 @@ class Window:
             if getattr(task, "priority", None) is not None:
                 display += f" - Priority: {task.priority}"
             self.listbox.insert(tk.END, display)
+
+            # Determine the foreground color for this item
+            color = "black"
+            if task.completed:
+                color = "gray"
+            elif getattr(task, "due_date", None):
+                try:
+                    due = _datetime.date.fromisoformat(str(task.due_date))
+                    if due < _datetime.date.today():
+                        color = "red"
+                except ValueError:
+                    pass
+
+            self.listbox.itemconfig(idx, fg=color)

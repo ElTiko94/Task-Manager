@@ -3,6 +3,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from task import Task
 from controller import TaskController
 import window
+import datetime
 
 
 class DummyRoot:
@@ -66,6 +67,7 @@ class DummyListbox(DummyWidget):
         self.selection = ()
         self.bindings = {}
         self.config_called_with = {}
+        self.itemconfigs = {}
     def delete(self, start, end):
         self.items = []
     def insert(self, index, item):
@@ -79,6 +81,8 @@ class DummyListbox(DummyWidget):
     def config(self, **kwargs):
         self.config_called_with.update(kwargs)
     configure = config
+    def itemconfig(self, index, **kwargs):
+        self.itemconfigs[index] = kwargs
 
 
 class DummyScrollbar(DummyWidget):
@@ -361,4 +365,20 @@ def test_view_subtasks_uses_toplevel(monkeypatch):
 
     assert created.get('parent') is root
     assert 'tk_called' not in created
+
+
+def test_completed_task_gray(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Done')
+    win.controller.mark_task_completed(0)
+    win.refresh_window()
+    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'gray'
+
+
+def test_overdue_task_red(monkeypatch):
+    win = setup_window(monkeypatch)
+    past = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+    win.controller.add_task('Late', due_date=past)
+    win.refresh_window()
+    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'red'
 
