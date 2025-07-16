@@ -123,3 +123,24 @@ class Task:
             else:
                 names.append(task.name)
         return ", ".join(names)
+
+    def to_dict(self):
+        """Return a dictionary representation of this task."""
+        return {
+            "name": self.name,
+            "sub_tasks": [t.to_dict() for t in self.sub_tasks],
+            "due_date": self.due_date,
+            "priority": self.priority,
+            "completed": self.completed,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        """Create a ``Task`` from a dictionary produced by :py:meth:`to_dict`."""
+        name = data.get("name")
+        sub_tasks = [cls.from_dict(d) for d in data.get("sub_tasks", [])]
+        due_date = data.get("due_date")
+        priority = data.get("priority")
+        completed = data.get("completed", False)
+        return cls(name, sub_tasks=sub_tasks, due_date=due_date,
+                   priority=priority, completed=completed)
