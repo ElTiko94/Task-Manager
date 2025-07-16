@@ -148,6 +148,15 @@ class Window:
         self.controller = controller
         self.name = controller.get_task_name()
 
+        # Optional file menu for JSON import/export when available
+        if hasattr(tk, "Menu") and hasattr(self.root, "config"):
+            menubar = tk.Menu(self.root)
+            file_menu = tk.Menu(menubar, tearoff=0)
+            file_menu.add_command(label="Export to JSON", command=self.export_tasks)
+            file_menu.add_command(label="Import from JSON", command=self.import_tasks)
+            menubar.add_cascade(label="File", menu=file_menu)
+            self.root.config(menu=menubar)
+
 
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.grid(row=0, column=0, sticky="nsew")
@@ -420,6 +429,37 @@ class Window:
         """Sort tasks by due date using the controller and refresh the view."""
         self.controller.sort_tasks_by_due_date()
         self.refresh_window()
+
+    def export_tasks(self):
+        """Prompt for a path and export tasks as JSON."""
+        if not hasattr(tk, "filedialog"):
+            from tkinter import filedialog
+        else:
+            filedialog = tk.filedialog
+        path = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        )
+        if path:
+            from persistence import save_tasks_to_json
+            save_tasks_to_json(self.controller.task, path)
+
+    def import_tasks(self):
+        """Prompt for a JSON file and replace current tasks."""
+        if not hasattr(tk, "filedialog"):
+            from tkinter import filedialog
+        else:
+            filedialog = tk.filedialog
+        path = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+        )
+        if path:
+            from persistence import load_tasks_from_json
+            task = load_tasks_from_json(path)
+            self.controller.task = task
+            self.task_list = task.get_sub_tasks()
+            self.name = task.name
+            self.refresh_window()
 
     def refresh_window(self):
         """Refreshes the listbox displaying the tasks."""
