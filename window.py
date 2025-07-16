@@ -495,7 +495,8 @@ class Window:
         search_term = self.search_var.get().lower().strip() if hasattr(self, "search_var") else ""
         hide_completed = bool(self.hide_completed_var.get()) if hasattr(self, "hide_completed_var") else False
 
-        for idx, task in enumerate(self.controller.get_sub_tasks()):
+        idx = 0
+        for task in self.controller.get_sub_tasks():
 
             if not isinstance(task, Task):
                 continue
@@ -513,6 +514,10 @@ class Window:
                 display += f" - Due: {task.due_date}"
             if getattr(task, "priority", None) is not None:
                 display += f" - Priority: {task.priority}"
+
+            # Determine the index of the item we are about to insert. Using the
+            # current size of the listbox ensures the index matches the
+            # insertion point even when some tasks are filtered out.
             self.listbox.insert(tk.END, display)
 
             # Determine the foreground color for this item
@@ -528,6 +533,7 @@ class Window:
                     pass
 
             self.listbox.itemconfig(idx, fg=color)
+            idx += 1
 
     def use_theme(self, theme_name):
         """Change the ttk theme for this window."""
