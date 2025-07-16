@@ -62,12 +62,15 @@ class DummyListbox(DummyWidget):
         super().__init__(*args, **kwargs)
         self.items = []
         self.selection = ()
+        self.bindings = {}
     def delete(self, start, end):
         self.items = []
     def insert(self, index, item):
         self.items.append(item)
     def curselection(self):
         return self.selection
+    def bind(self, event, func):
+        self.bindings[event] = func
 
 
 class DummyTkModule:
@@ -152,4 +155,21 @@ def test_sort_button(monkeypatch):
     win.sort_tasks_by_priority()
     assert [t.name for t in win.controller.get_sub_tasks()] == ['High', 'Low', 'None']
     assert [item.split()[0] for item in win.listbox.items] == ['High', 'Low', 'None']
+
+
+def test_double_click_opens_subtasks(monkeypatch):
+    called = {}
+
+    def fake_view(self):
+        called['view'] = True
+
+    monkeypatch.setattr(window.Window, 'view_subtasks', fake_view)
+    win = setup_window(monkeypatch)
+    win.controller.add_task('A')
+    win.refresh_window()
+    win.listbox.selection = (0,)
+    bound = win.listbox.bindings.get('<Double-Button-1>')
+    assert bound is not None
+    bound(None)
+    assert called.get('view')
 
