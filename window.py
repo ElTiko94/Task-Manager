@@ -464,7 +464,7 @@ class Window:
     def refresh_window(self):
         """Refreshes the listbox displaying the tasks."""
         self.listbox.delete(0, tk.END)
-        for task in self.controller.get_sub_tasks():
+        for idx, task in enumerate(self.controller.get_sub_tasks()):
             if isinstance(task, Task):
                 # Start with the task name only so sub-task information
                 # isn't included in the display
@@ -476,3 +476,17 @@ class Window:
                 if getattr(task, "priority", None) is not None:
                     display += f" - Priority: {task.priority}"
                 self.listbox.insert(tk.END, display)
+
+                # Determine the foreground color for this item
+                color = "black"
+                if task.completed:
+                    color = "gray"
+                elif getattr(task, "due_date", None):
+                    try:
+                        due = _datetime.date.fromisoformat(str(task.due_date))
+                        if due < _datetime.date.today():
+                            color = "red"
+                    except ValueError:
+                        pass
+
+                self.listbox.itemconfig(idx, fg=color)
