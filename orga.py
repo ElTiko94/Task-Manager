@@ -28,6 +28,28 @@ from window import Window
 from controller import TaskController
 
 
+def load_tasks():
+    """Load tasks from 'object.pkl'.
+
+    Returns a Task object. If the file is missing or cannot be
+    unpickled, a new ``Task('Main')`` is returned and the user is
+    warned.
+    """
+    try:
+        with open("object.pkl", "rb") as f:
+            return pickle.load(f)
+    except (FileNotFoundError, pickle.UnpicklingError, OSError) as err:
+        try:
+            tkMessageBox.showwarning(
+                "Load Error",
+                "Failed to load saved tasks, starting with a new list.",
+            )
+        except Exception:
+            # In testing environments the message box may not be available
+            pass
+        return Task("Main")
+
+
 # Main program
 def on_closing(task, rt):
     """Function to handle closing event of the application."""
@@ -41,11 +63,7 @@ def on_closing(task, rt):
 if __name__ == "__main__":
     root = tk.Tk()
 
-    try:
-        with open("object.pkl", "rb") as f:
-            main_tasks = pickle.load(f)
-    except FileNotFoundError:
-        main_tasks = Task("Main")
+    main_tasks = load_tasks()
 
     controller = TaskController(main_tasks)
     window = Window(root, controller)
