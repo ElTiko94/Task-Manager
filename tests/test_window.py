@@ -147,6 +147,29 @@ def test_confirm_edit(monkeypatch):
     assert t.completed
 
 
+def test_edit_task_prefills_fields(monkeypatch):
+    entries = []
+
+    class TrackedEntry(DummyEntry):
+        def __init__(self, *args, textvariable=None, **kwargs):
+            super().__init__(*args, textvariable=textvariable, **kwargs)
+            entries.append(self)
+
+    fake_tk = DummyTkModule()
+    fake_tk.Entry = TrackedEntry
+    monkeypatch.setattr(window, 'tk', fake_tk)
+    root = DummyRoot()
+    controller = TaskController(Task('Main'))
+    controller.add_task('Existing', due_date='2024-12-31', priority=2)
+    win = window.Window(root, controller)
+    win.listbox.selection = (0,)
+    win.edit_task()
+
+    assert entries[0].get() == 'Existing'
+    assert entries[1].get() == '2024-12-31'
+    assert entries[2].get() == '2'
+
+
 def test_sort_button(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task('Low', priority=5)

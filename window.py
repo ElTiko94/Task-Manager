@@ -177,7 +177,7 @@ class Window:
 
         task_name_field.set(task.name)
         if task.due_date:
-            due_date_field.set(task.due_date)
+            due_date_field.set(str(task.due_date))
         if task.priority is not None:
             priority_field.set(str(task.priority))
         completed_var.set(1 if task.completed else 0)
