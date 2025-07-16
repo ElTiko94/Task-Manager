@@ -35,6 +35,8 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 - `controller.py`: Defines the `TaskController` class for managing tasks.
 - `window.py`: Defines the `Window` class for creating the main GUI window.
 - `object.pkl`: Pickle file to store tasks.
+## Running Tests
+Run `pytest` from the repository root to execute the test suite.
 
 ## Contributions
 Contributions to this project are welcome. If you find any bugs or have suggestions for improvements, please open an issue or submit a pull request on GitHub.
