@@ -8,6 +8,8 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 - View subtasks
 - Add subtasks to a task
 - Save tasks to a file for later retrieval
+- Optional due dates and priority levels for tasks
+- Mark tasks as completed
 
 ## Requirements
 - Python 3.7

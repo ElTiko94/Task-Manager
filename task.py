@@ -35,16 +35,22 @@ class Task:
             Returns a string representation of the sub-tasks of the task.
     """
 
-    def __init__(self, name, sub_tasks=None):
+    def __init__(self, name, sub_tasks=None, due_date=None, priority=None, completed=False):
         """
         Initializes a new Task object.
 
         Args:
             name (str): The name of the task.
             sub_tasks (list of Task, optional): A list of sub-tasks associated with the task.
+            due_date (str, optional): Optional due date for the task.
+            priority (int, optional): Optional priority level for the task.
+            completed (bool, optional): Completion status of the task.
         """
         self.name = name
         self.sub_tasks = sub_tasks if sub_tasks is not None else []
+        self.due_date = due_date
+        self.priority = priority
+        self.completed = completed
 
     def __str__(self):
         """
@@ -53,9 +59,12 @@ class Task:
         Returns:
             str: A string representation of the task, including its name and sub-tasks.
         """
+        name = self.name
+        if self.completed:
+            name += " (Completed)"
         if self.sub_tasks:
-            return f"{self.name} {{{self.prt_sbtsk()}}}"
-        return self.name
+            return f"{name} {{{self.prt_sbtsk()}}}"
+        return name
 
     def add_sub_task(self, task):
         """
@@ -83,6 +92,22 @@ class Task:
             list of Task: The list of sub-tasks associated with the task.
         """
         return self.sub_tasks
+
+    def set_due_date(self, due_date):
+        """Set the due date for the task."""
+        self.due_date = due_date
+
+    def set_priority(self, priority):
+        """Set the priority for the task."""
+        self.priority = priority
+
+    def mark_completed(self):
+        """Mark this task as completed."""
+        self.completed = True
+
+    def mark_incomplete(self):
+        """Mark this task as not completed."""
+        self.completed = False
 
     def prt_sbtsk(self):
         """
