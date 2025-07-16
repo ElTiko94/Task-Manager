@@ -90,6 +90,10 @@ class DummyTkModule:
     Checkbutton = DummyCheckbutton
     Frame = DummyFrame
 
+    @staticmethod
+    def Toplevel(parent=None):
+        return DummyRoot()
+
 
 def setup_window(monkeypatch):
     fake_tk = DummyTkModule()
