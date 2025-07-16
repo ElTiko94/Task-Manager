@@ -1,7 +1,5 @@
 @echo off
 
-rem Exécuter Task Manager
-echo Exécution de orga.py...
+rem Execute Task Manager
+echo Executing orga.py...
 start "orga.py" python orga.py
-
-
