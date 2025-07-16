@@ -55,6 +55,8 @@ class Window:
 
         self.listbox = tk.Listbox(self.root)
         self.listbox.pack()
+        # Bind double-click on a task to open its subtasks
+        self.listbox.bind("<Double-Button-1>", lambda e: self.view_subtasks())
 
         view_subtasks_btn = tk.Button(self.root, text="View Subtasks", command= self.view_subtasks)
         view_subtasks_btn.pack()
