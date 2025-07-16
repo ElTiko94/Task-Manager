@@ -119,14 +119,16 @@ class Window:
         self.refresh_window()
 
     def add_task(self):
-        """Displays a dialog to add a new task."""
+        """Displays a dialog to add a new task using a Toplevel window."""
+        dialog = tk.Toplevel(self.root)
+
         task_name_field = tk.StringVar()
         due_date_field = tk.StringVar()
         priority_field = tk.StringVar()
         completed_var = tk.IntVar()
 
-        form = ttk.Frame(self.main_frame)
-        form.grid(row=4, column=0, columnspan=3, pady=5)
+        form = ttk.Frame(dialog)
+        form.grid(row=0, column=0, padx=10, pady=10)
 
         ttk.Label(form, text="Task Name:").grid(row=0, column=0, sticky="e")
         task_entry = ttk.Entry(form, textvariable=task_name_field)
@@ -150,6 +152,7 @@ class Window:
                 completed_var,
                 completed_check,
                 confirm_button,
+                dialog,
             ),
         )
         confirm_button.grid(row=4, column=0, columnspan=2, pady=2)
@@ -162,6 +165,7 @@ class Window:
         completed_var,
         completed_check,
         confirm_button,
+        dialog=None,
     ):
         """
         Creates a new task based on the entered name.
@@ -182,6 +186,9 @@ class Window:
         completed_check.destroy()
         confirm_button.destroy()
 
+        if dialog is not None:
+            dialog.destroy()
+
         self.controller.add_task(task_name, due_date=due_date or None, priority=priority)
         if completed:
             idx = len(self.controller.get_sub_tasks()) - 1
@@ -189,12 +196,14 @@ class Window:
         self.refresh_window()
 
     def edit_task(self):
-        """Displays a dialog to edit the selected task."""
+        """Displays a dialog to edit the selected task using a Toplevel."""
         selected_index = self.listbox.curselection()
         if not selected_index:
             return
 
         task = self.controller.get_sub_tasks()[selected_index[0]]
+
+        dialog = tk.Toplevel(self.root)
 
         task_name_field = tk.StringVar()
         due_date_field = tk.StringVar()
@@ -208,8 +217,8 @@ class Window:
             priority_field.set(str(task.priority))
         completed_var.set(1 if task.completed else 0)
 
-        form = ttk.Frame(self.main_frame)
-        form.grid(row=4, column=0, columnspan=3, pady=5)
+        form = ttk.Frame(dialog)
+        form.grid(row=0, column=0, padx=10, pady=10)
 
         ttk.Label(form, text="Task Name:").grid(row=0, column=0, sticky="e")
         task_entry = ttk.Entry(form, textvariable=task_name_field)
@@ -234,6 +243,7 @@ class Window:
                 completed_check,
                 selected_index,
                 confirm_button,
+                dialog,
             ),
         )
         confirm_button.grid(row=4, column=0, columnspan=2, pady=2)
@@ -247,6 +257,7 @@ class Window:
         completed_check,
         selected_index,
         confirm_button,
+        dialog=None,
     ):
         """
         Confirms the edit of a task and updates the listbox.
@@ -267,6 +278,9 @@ class Window:
         priority_entry.destroy()
         completed_check.destroy()
         confirm_button.destroy()
+
+        if dialog is not None:
+            dialog.destroy()
 
         idx = selected_index[0]
         self.controller.edit_task(idx, new_name)
