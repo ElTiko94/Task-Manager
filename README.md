@@ -30,7 +30,7 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 5. **Saving Changes**: The application prompts you to save changes when you close the window. Click "Yes" to save changes or "No" to discard them.
 
 ## File Structure
-- `main.py`: Main entry point of the application.
+- `orga.py`: Main entry point of the application.
 - `task.py`: Defines the `Task` class representing a single task.
 - `controller.py`: Defines the `TaskController` class for managing tasks.
 - `window.py`: Defines the `Window` class for creating the main GUI window.
@@ -40,4 +40,4 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 Contributions to this project are welcome. If you find any bugs or have suggestions for improvements, please open an issue or submit a pull request on GitHub.
 
 ## Authors
-ElTiko_94
+- ElTiko_94 - Original author and maintainer
