@@ -19,6 +19,17 @@ class DummyStringVar:
         return self.value
 
 
+class DummyIntVar:
+    def __init__(self):
+        self.value = 0
+
+    def set(self, v):
+        self.value = int(v)
+
+    def get(self):
+        return self.value
+
+
 class DummyWidget:
     def __init__(self, *args, **kwargs):
         self.command = kwargs.get('command')
@@ -37,6 +48,12 @@ class DummyEntry(DummyWidget):
         self.textvariable = textvariable
     def get(self):
         return self.textvariable.get() if self.textvariable else ''
+
+
+class DummyCheckbutton(DummyWidget):
+    def __init__(self, *args, variable=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.variable = variable
 
 
 class DummyListbox(DummyWidget):
@@ -60,6 +77,8 @@ class DummyTkModule:
     Entry = DummyEntry
     Listbox = DummyListbox
     StringVar = DummyStringVar
+    IntVar = DummyIntVar
+    Checkbutton = DummyCheckbutton
 
 
 def setup_window(monkeypatch):
@@ -81,11 +100,22 @@ def test_window_initial_refresh(monkeypatch):
 def test_create_task_button(monkeypatch):
     win = setup_window(monkeypatch)
     entry = DummyEntry(textvariable=DummyStringVar())
+    due = DummyEntry(textvariable=DummyStringVar())
+    prio = DummyEntry(textvariable=DummyStringVar())
+    chk_var = DummyIntVar()
+    chk = DummyCheckbutton(variable=chk_var)
     entry.textvariable.set('New')
+    due.textvariable.set('2025-12-31')
+    prio.textvariable.set('2')
+    chk_var.set(1)
     btn = DummyWidget()
-    win.create_task_button(entry, btn)
-    assert [t.name for t in win.controller.get_sub_tasks()] == ['New']
-    assert win.listbox.items == ['New']
+    win.create_task_button(entry, due, prio, chk_var, chk, btn)
+    t = win.controller.get_sub_tasks()[0]
+    assert t.name == 'New'
+    assert t.due_date == '2025-12-31'
+    assert t.priority == 2
+    assert t.completed
+    assert win.listbox.items == ['New (Completed) - Due: 2025-12-31 - Priority: 2']
 
 
 def test_confirm_edit(monkeypatch):
@@ -94,9 +124,22 @@ def test_confirm_edit(monkeypatch):
     win.refresh_window()
     var = DummyStringVar()
     var.set('Updated')
+    due_var = DummyStringVar()
+    due_var.set('2026-01-01')
+    prio_var = DummyStringVar()
+    prio_var.set('3')
+    chk_var = DummyIntVar()
+    chk_var.set(1)
     win.listbox.selection = (0,)
     entry = DummyEntry(textvariable=var)
+    due_entry = DummyEntry(textvariable=due_var)
+    prio_entry = DummyEntry(textvariable=prio_var)
+    chk = DummyCheckbutton(variable=chk_var)
     btn = DummyWidget()
-    win.confirm_edit(entry, (0,), btn)
-    assert win.controller.get_sub_tasks()[0].name == 'Updated'
+    win.confirm_edit(entry, due_entry, prio_entry, chk_var, chk, (0,), btn)
+    t = win.controller.get_sub_tasks()[0]
+    assert t.name == 'Updated'
+    assert t.due_date == '2026-01-01'
+    assert t.priority == 3
+    assert t.completed
 
