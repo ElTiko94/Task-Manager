@@ -148,6 +148,14 @@ class Window:
         self.controller = controller
         self.name = controller.get_task_name()
 
+
+        # Configure ttk theme for a more modern look
+        self.style = ttk.Style(self.root)
+        try:
+            self.style.theme_use("clam")
+        except Exception:
+            # Fallback silently if theme is unavailable
+            pass
         # Optional file menu for JSON import/export when available
         if hasattr(tk, "Menu") and hasattr(self.root, "config"):
             menubar = tk.Menu(self.root)
@@ -520,3 +528,10 @@ class Window:
                     pass
 
             self.listbox.itemconfig(idx, fg=color)
+
+    def use_theme(self, theme_name):
+        """Change the ttk theme for this window."""
+        try:
+            self.style.theme_use(theme_name)
+        except Exception:
+            pass
