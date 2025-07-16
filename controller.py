@@ -103,3 +103,7 @@ class TaskController:
     def sort_tasks_by_priority(self):
         """Sort the controller's sub tasks by priority (None values last)."""
         self.task.sub_tasks.sort(key=lambda t: (t.priority is None, t.priority))
+
+    def sort_tasks_by_due_date(self):
+        """Sort the controller's sub tasks by due date (None values last)."""
+        self.task.sub_tasks.sort(key=lambda t: (t.due_date is None, t.due_date))

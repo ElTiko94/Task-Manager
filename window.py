@@ -53,6 +53,9 @@ class Window:
         sort_btn = tk.Button(self.root, text="Sort by Priority", command=self.sort_tasks_by_priority)
         sort_btn.pack()
 
+        sort_due_btn = tk.Button(self.root, text="Sort by Due Date", command=self.sort_tasks_by_due_date)
+        sort_due_btn.pack()
+
         self.listbox = tk.Listbox(self.root)
         self.listbox.pack()
         # Bind double-click on a task to open its subtasks
@@ -253,6 +256,11 @@ class Window:
     def sort_tasks_by_priority(self):
         """Sort tasks by priority using the controller and refresh the view."""
         self.controller.sort_tasks_by_priority()
+        self.refresh_window()
+
+    def sort_tasks_by_due_date(self):
+        """Sort tasks by due date using the controller and refresh the view."""
+        self.controller.sort_tasks_by_due_date()
         self.refresh_window()
 
     def refresh_window(self):
