@@ -18,7 +18,8 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 ## Installation
 1. Clone or download the repository to your local machine.
 2. Ensure you have Python installed on your system.
-3. Run `Start.bat` to start the application.
+3. Run `Start.bat` on Windows or `./Start.sh` on Linux/macOS to start the application.
+   If you haven't used the shell script before, give it execute permission with `chmod +x Start.sh`.
 
 ## Usage
 1. **Adding a Task**: Click on the "Add Task" button and enter the name of the task in the text field. Click "Confirm" to add the task.
@@ -37,6 +38,8 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 - `controller.py`: Defines the `TaskController` class for managing tasks.
 - `window.py`: Defines the `Window` class for creating the main GUI window.
 - `object.pkl`: Pickle file to store tasks.
+- `Start.bat`: Windows script to launch the application.
+- `Start.sh`: Shell script to launch the application on Unix systems.
 ## Running Tests
 Run `pytest` from the repository root to execute the test suite.
 
