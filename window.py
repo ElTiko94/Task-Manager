@@ -93,13 +93,43 @@ class Window:
     def add_task(self):
         """Displays a dialog to add a new task."""
         task_name_field = tk.StringVar()
-        task_entry = tk.Entry(self.root, textvariable=task_name_field)
-        task_entry.pack()
+        due_date_field = tk.StringVar()
+        priority_field = tk.StringVar()
+        completed_var = tk.IntVar()
 
-        confirm_button = tk.Button(self.root, text="Confirm", command=lambda: self.create_task_button(task_entry, confirm_button))
+        task_entry = tk.Entry(self.root, textvariable=task_name_field)
+        due_date_entry = tk.Entry(self.root, textvariable=due_date_field)
+        priority_entry = tk.Entry(self.root, textvariable=priority_field)
+        completed_check = tk.Checkbutton(self.root, text="Completed", variable=completed_var)
+
+        task_entry.pack()
+        due_date_entry.pack()
+        priority_entry.pack()
+        completed_check.pack()
+
+        confirm_button = tk.Button(
+            self.root,
+            text="Confirm",
+            command=lambda: self.create_task_button(
+                task_entry,
+                due_date_entry,
+                priority_entry,
+                completed_var,
+                completed_check,
+                confirm_button,
+            ),
+        )
         confirm_button.pack()
 
-    def create_task_button(self, task_entry, confirm_button):
+    def create_task_button(
+        self,
+        task_entry,
+        due_date_entry,
+        priority_entry,
+        completed_var,
+        completed_check,
+        confirm_button,
+    ):
         """
         Creates a new task based on the entered name.
 
@@ -108,10 +138,21 @@ class Window:
             confirm_button (tk.Button): The confirm button for adding the task.
         """
         task_name = task_entry.get()
+        due_date = due_date_entry.get()
+        priority_text = priority_entry.get()
+        priority = int(priority_text) if priority_text else None
+        completed = bool(completed_var.get())
+
         task_entry.destroy()
+        due_date_entry.destroy()
+        priority_entry.destroy()
+        completed_check.destroy()
         confirm_button.destroy()
 
-        self.controller.add_task(task_name)
+        self.controller.add_task(task_name, due_date=due_date or None, priority=priority)
+        if completed:
+            idx = len(self.controller.get_sub_tasks()) - 1
+            self.controller.mark_task_completed(idx)
         self.refresh_window()
 
     def edit_task(self):
@@ -120,16 +161,56 @@ class Window:
         if not selected_index:
             return
 
-        task_name_field = tk.StringVar()
-        task_name_field.set(self.controller.get_sub_tasks()[selected_index[0]].name)
-        task_entry = tk.Entry(self.root, textvariable=task_name_field)
-        task_entry.pack()
+        task = self.controller.get_sub_tasks()[selected_index[0]]
 
-        confirm_button = tk.Button(self.root, text="Confirm", command=lambda: self.confirm_edit(task_entry, selected_index, confirm_button))
+        task_name_field = tk.StringVar()
+        due_date_field = tk.StringVar()
+        priority_field = tk.StringVar()
+        completed_var = tk.IntVar()
+
+        task_name_field.set(task.name)
+        if task.due_date:
+            due_date_field.set(task.due_date)
+        if task.priority is not None:
+            priority_field.set(str(task.priority))
+        completed_var.set(1 if task.completed else 0)
+
+        task_entry = tk.Entry(self.root, textvariable=task_name_field)
+        due_date_entry = tk.Entry(self.root, textvariable=due_date_field)
+        priority_entry = tk.Entry(self.root, textvariable=priority_field)
+        completed_check = tk.Checkbutton(self.root, text="Completed", variable=completed_var)
+
+        task_entry.pack()
+        due_date_entry.pack()
+        priority_entry.pack()
+        completed_check.pack()
+
+        confirm_button = tk.Button(
+            self.root,
+            text="Confirm",
+            command=lambda: self.confirm_edit(
+                task_entry,
+                due_date_entry,
+                priority_entry,
+                completed_var,
+                completed_check,
+                selected_index,
+                confirm_button,
+            ),
+        )
         confirm_button.pack()
 
     # Function to handle task editing and updating the listbox
-    def confirm_edit(self, task_name_field, selected_index, confirm_button):
+    def confirm_edit(
+        self,
+        task_name_field,
+        due_date_entry,
+        priority_entry,
+        completed_var,
+        completed_check,
+        selected_index,
+        confirm_button,
+    ):
         """
         Confirms the edit of a task and updates the listbox.
 
@@ -139,10 +220,25 @@ class Window:
             confirm_button (tk.Button): The confirm button for editing the task.
         """
         new_name = task_name_field.get()
+        new_due = due_date_entry.get()
+        priority_text = priority_entry.get()
+        new_priority = int(priority_text) if priority_text else None
+        completed = bool(completed_var.get())
+
         task_name_field.destroy()
+        due_date_entry.destroy()
+        priority_entry.destroy()
+        completed_check.destroy()
         confirm_button.destroy()
 
-        self.controller.edit_task(selected_index[0], new_name)
+        idx = selected_index[0]
+        self.controller.edit_task(idx, new_name)
+        self.controller.set_task_due_date(idx, new_due or None)
+        self.controller.set_task_priority(idx, new_priority)
+        if completed:
+            self.controller.mark_task_completed(idx)
+        else:
+            self.controller.mark_task_incomplete(idx)
         self.refresh_window()
 
     def refresh_window(self):
@@ -150,4 +246,9 @@ class Window:
         self.listbox.delete(0, tk.END)
         for task in self.controller.get_sub_tasks():
             if isinstance(task, Task):
-                self.listbox.insert(tk.END, task.name)
+                display = str(task)
+                if getattr(task, "due_date", None):
+                    display += f" - Due: {task.due_date}"
+                if getattr(task, "priority", None) is not None:
+                    display += f" - Priority: {task.priority}"
+                self.listbox.insert(tk.END, display)
