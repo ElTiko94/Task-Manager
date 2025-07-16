@@ -3,6 +3,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from task import Task
 from controller import TaskController
 import window
+import datetime
 
 
 class DummyRoot:
@@ -66,6 +67,7 @@ class DummyListbox(DummyWidget):
         self.selection = ()
         self.bindings = {}
         self.config_called_with = {}
+        self.itemconfigs = {}
     def delete(self, start, end):
         self.items = []
     def insert(self, index, item):
@@ -79,6 +81,8 @@ class DummyListbox(DummyWidget):
     def config(self, **kwargs):
         self.config_called_with.update(kwargs)
     configure = config
+    def itemconfig(self, index, **kwargs):
+        self.itemconfigs[index] = kwargs
 
 
 class DummyScrollbar(DummyWidget):
@@ -213,6 +217,7 @@ def test_edit_task_prefills_fields(monkeypatch):
     controller = TaskController(Task('Main'))
     controller.add_task('Existing', due_date='2024-12-31', priority=2)
     win = window.Window(root, controller)
+    entries.clear()  # ignore widgets created during initialization
     win.listbox.selection = (0,)
     win.edit_task()
 
@@ -242,6 +247,7 @@ def test_edit_subtask_prefills_fields(monkeypatch):
     win = window.Window(root, controller)
     sub_root = DummyRoot()
     sub_win = window.Window(sub_root, TaskController(parent))
+    entries.clear()  # ignore widgets created during initialization
     sub_win.listbox.selection = (0,)
     sub_win.edit_task()
 
@@ -301,6 +307,26 @@ def test_sort_by_due_date(monkeypatch):
     assert [item.split()[0] for item in win.listbox.items] == ['Sooner', 'Later', 'NoDue']
 
 
+def test_search_filter(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Hello')
+    win.controller.add_task('World')
+    win.controller.add_task('Help')
+    win.search_var.set('hel')
+    win.refresh_window()
+    assert [item.split()[0] for item in win.listbox.items] == ['Hello', 'Help']
+
+
+def test_hide_completed(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Done')
+    win.controller.add_task('Todo')
+    win.controller.mark_task_completed(0)
+    win.hide_completed_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.listbox.items] == ['Todo']
+
+
 def test_double_click_opens_subtasks(monkeypatch):
     called = {}
 
@@ -351,4 +377,20 @@ def test_view_subtasks_uses_toplevel(monkeypatch):
 
     assert created.get('parent') is root
     assert 'tk_called' not in created
+
+
+def test_completed_task_gray(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Done')
+    win.controller.mark_task_completed(0)
+    win.refresh_window()
+    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'gray'
+
+
+def test_overdue_task_red(monkeypatch):
+    win = setup_window(monkeypatch)
+    past = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+    win.controller.add_task('Late', due_date=past)
+    win.refresh_window()
+    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'red'
 

@@ -148,6 +148,7 @@ class Window:
         self.controller = controller
         self.name = controller.get_task_name()
 
+
         # Configure ttk theme for a more modern look
         self.style = ttk.Style(self.root)
         try:
@@ -155,7 +156,6 @@ class Window:
         except Exception:
             # Fallback silently if theme is unavailable
             pass
-
         # Optional file menu for JSON import/export when available
         if hasattr(tk, "Menu") and hasattr(self.root, "config"):
             menubar = tk.Menu(self.root)
@@ -214,6 +214,25 @@ class Window:
             self.main_frame, text="Delete", command=self.delete_task
         )
         dlt_btn.grid(row=3, column=2, sticky="ew", padx=2)
+
+        # --- Filtering widgets ---
+        self.search_var = tk.StringVar()
+        self.hide_completed_var = tk.IntVar()
+
+        search_entry = ttk.Entry(self.main_frame, textvariable=self.search_var)
+        search_entry.grid(row=4, column=0, sticky="ew", padx=2)
+
+        hide_check = tk.Checkbutton(
+            self.main_frame,
+            text="Hide completed",
+            variable=self.hide_completed_var,
+        )
+        hide_check.grid(row=4, column=1, sticky="ew", padx=2)
+
+        filter_btn = ttk.Button(
+            self.main_frame, text="Apply Filter", command=self.refresh_window
+        )
+        filter_btn.grid(row=4, column=2, sticky="ew", padx=2)
 
         self.root.resizable(True, True)
         self.refresh_window()
@@ -472,18 +491,43 @@ class Window:
     def refresh_window(self):
         """Refreshes the listbox displaying the tasks."""
         self.listbox.delete(0, tk.END)
-        for task in self.controller.get_sub_tasks():
-            if isinstance(task, Task):
-                # Start with the task name only so sub-task information
-                # isn't included in the display
-                display = task.name
-                if task.completed:
-                    display += " (Completed)"
-                if getattr(task, "due_date", None):
-                    display += f" - Due: {task.due_date}"
-                if getattr(task, "priority", None) is not None:
-                    display += f" - Priority: {task.priority}"
-                self.listbox.insert(tk.END, display)
+
+        search_term = self.search_var.get().lower().strip() if hasattr(self, "search_var") else ""
+        hide_completed = bool(self.hide_completed_var.get()) if hasattr(self, "hide_completed_var") else False
+
+        for idx, task in enumerate(self.controller.get_sub_tasks()):
+
+            if not isinstance(task, Task):
+                continue
+
+            if hide_completed and task.completed:
+                continue
+
+            if search_term and search_term not in task.name.lower():
+                continue
+
+            display = task.name
+            if task.completed:
+                display += " (Completed)"
+            if getattr(task, "due_date", None):
+                display += f" - Due: {task.due_date}"
+            if getattr(task, "priority", None) is not None:
+                display += f" - Priority: {task.priority}"
+            self.listbox.insert(tk.END, display)
+
+            # Determine the foreground color for this item
+            color = "black"
+            if task.completed:
+                color = "gray"
+            elif getattr(task, "due_date", None):
+                try:
+                    due = _datetime.date.fromisoformat(str(task.due_date))
+                    if due < _datetime.date.today():
+                        color = "red"
+                except ValueError:
+                    pass
+
+            self.listbox.itemconfig(idx, fg=color)
 
     def use_theme(self, theme_name):
         """Change the ttk theme for this window."""
