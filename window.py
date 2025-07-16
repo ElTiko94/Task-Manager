@@ -100,14 +100,16 @@ class Window:
         priority_field = tk.StringVar()
         completed_var = tk.IntVar()
 
+        tk.Label(self.root, text="Task Name:").pack()
         task_entry = tk.Entry(self.root, textvariable=task_name_field)
-        due_date_entry = tk.Entry(self.root, textvariable=due_date_field)
-        priority_entry = tk.Entry(self.root, textvariable=priority_field)
-        completed_check = tk.Checkbutton(self.root, text="Completed", variable=completed_var)
-
         task_entry.pack()
+        tk.Label(self.root, text="Due Date:").pack()
+        due_date_entry = tk.Entry(self.root, textvariable=due_date_field)
         due_date_entry.pack()
+        tk.Label(self.root, text="Priority:").pack()
+        priority_entry = tk.Entry(self.root, textvariable=priority_field)
         priority_entry.pack()
+        completed_check = tk.Checkbutton(self.root, text="Completed", variable=completed_var)
         completed_check.pack()
 
         confirm_button = tk.Button(
@@ -178,14 +180,16 @@ class Window:
             priority_field.set(str(task.priority))
         completed_var.set(1 if task.completed else 0)
 
+        tk.Label(self.root, text="Task Name:").pack()
         task_entry = tk.Entry(self.root, textvariable=task_name_field)
-        due_date_entry = tk.Entry(self.root, textvariable=due_date_field)
-        priority_entry = tk.Entry(self.root, textvariable=priority_field)
-        completed_check = tk.Checkbutton(self.root, text="Completed", variable=completed_var)
-
         task_entry.pack()
+        tk.Label(self.root, text="Due Date:").pack()
+        due_date_entry = tk.Entry(self.root, textvariable=due_date_field)
         due_date_entry.pack()
+        tk.Label(self.root, text="Priority:").pack()
+        priority_entry = tk.Entry(self.root, textvariable=priority_field)
         priority_entry.pack()
+        completed_check = tk.Checkbutton(self.root, text="Completed", variable=completed_var)
         completed_check.pack()
 
         confirm_button = tk.Button(
