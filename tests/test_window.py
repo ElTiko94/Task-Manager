@@ -94,6 +94,17 @@ class DummyFrame(DummyWidget):
     pass
 
 
+class DummyStyle:
+    def __init__(self, root=None):
+        self.root = root
+        self.used = None
+
+    def theme_use(self, name=None):
+        if name is not None:
+            self.used = name
+        return self.used
+
+
 class DummyTkModule:
     END = 'end'
     Label = DummyWidget
@@ -105,6 +116,7 @@ class DummyTkModule:
     IntVar = DummyIntVar
     Checkbutton = DummyCheckbutton
     Frame = DummyFrame
+    Style = DummyStyle
 
     @staticmethod
     def Toplevel(parent=None):
