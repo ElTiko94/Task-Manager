@@ -233,3 +233,37 @@ def test_double_click_opens_subtasks(monkeypatch):
     bound(None)
     assert called.get('view')
 
+
+def test_view_subtasks_uses_toplevel(monkeypatch):
+    created = {}
+
+    class FakeTk(DummyTkModule):
+        pass
+
+    fake_tk = FakeTk()
+
+    def toplevel(parent=None):
+        created['parent'] = parent
+        return DummyRoot()
+
+    fake_tk.Toplevel = toplevel
+
+    def fake_tk_root(*args, **kwargs):
+        created['tk_called'] = True
+        return DummyRoot()
+
+    fake_tk.Tk = fake_tk_root
+
+    monkeypatch.setattr(window, 'tk', fake_tk)
+
+    root = DummyRoot()
+    controller = TaskController(Task('Main'))
+    controller.add_task('Sub')
+    win = window.Window(root, controller)
+    win.listbox.selection = (0,)
+
+    win.view_subtasks()
+
+    assert created.get('parent') is root
+    assert 'tk_called' not in created
+
