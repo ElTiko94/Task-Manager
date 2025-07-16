@@ -53,7 +53,9 @@ class Task:
         Returns:
             str: A string representation of the task, including its name and sub-tasks.
         """
-        return self.name +" {" +self.prt_sbtsk() +"}" if self.prt_sbtsk() is not None else self.name
+        if self.sub_tasks:
+            return f"{self.name} {{{self.prt_sbtsk()}}}"
+        return self.name
 
     def add_sub_task(self, task):
         """
@@ -89,10 +91,10 @@ class Task:
         Returns:
             str: A string representation of the sub-tasks of the task.
         """
-        output = ""
+        names = []
         for task in self.sub_tasks:
-            if task.sub_tasks != []:
-                output += " " + task.name + " {" + task.prt_sbtsk() + "}"
+            if task.sub_tasks:
+                names.append(f"{task.name} {{{task.prt_sbtsk()}}}")
             else:
-                output += " " + task.name + ", "
-        return output
+                names.append(task.name)
+        return ", ".join(names)
