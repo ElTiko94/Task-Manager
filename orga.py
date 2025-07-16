@@ -61,7 +61,9 @@ def on_closing(task, rt):
 
 
 if __name__ == "__main__":
+
     root = tk.Tk()
+    root.title("Task Manager")
 
     main_tasks = load_tasks()
 
