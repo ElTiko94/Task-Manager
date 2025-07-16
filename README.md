@@ -13,12 +13,15 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 
 ## Requirements
 - Python 3.7
-- Tkinter (should be included with Python installation)
+- Tkinter (should be included with Python installation; on some Linux
+  systems you may need the `python3-tk` package)
+- Additional Python dependencies are listed in `requirements.txt`
 
 ## Installation
 1. Clone or download the repository to your local machine.
 2. Ensure you have Python installed on your system.
-3. Run `Start.bat` on Windows or `./Start.sh` on Linux/macOS to start the application.
+3. Install the required Python packages with `pip install -r requirements.txt`.
+4. Run `Start.bat` on Windows or `./Start.sh` on Linux/macOS to start the application.
    If you haven't used the shell script before, give it execute permission with `chmod +x Start.sh`.
 
 ## Usage
