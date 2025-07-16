@@ -41,3 +41,5 @@ Contributions to this project are welcome. If you find any bugs or have suggesti
 
 ## Authors
 ElTiko_94
+## License
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
