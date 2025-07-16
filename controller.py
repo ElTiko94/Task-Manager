@@ -35,14 +35,14 @@ class TaskController:
         """
         self.task = task
 
-    def add_task(self, task_name):
+    def add_task(self, task_name, due_date=None, priority=None):
         """
         Adds a new task to the task controller.
 
         Args:
             task_name (str): The name of the new task to be added.
         """
-        new_task = Task(task_name)
+        new_task = Task(task_name, due_date=due_date, priority=priority)
         self.task.add_sub_task(new_task)
 
     def edit_task(self, task_index, new_name):
@@ -64,6 +64,22 @@ class TaskController:
             index (int): The index of the task to be deleted.
         """
         self.task.remove_sub_task(self.get_sub_tasks()[index])
+
+    def mark_task_completed(self, index):
+        """Mark the task at the given index as completed."""
+        self.get_sub_tasks()[index].mark_completed()
+
+    def mark_task_incomplete(self, index):
+        """Mark the task at the given index as not completed."""
+        self.get_sub_tasks()[index].mark_incomplete()
+
+    def set_task_due_date(self, index, due_date):
+        """Set the due date for a task at the given index."""
+        self.get_sub_tasks()[index].set_due_date(due_date)
+
+    def set_task_priority(self, index, priority):
+        """Set the priority for a task at the given index."""
+        self.get_sub_tasks()[index].set_priority(priority)
 
     def get_task_name(self):
         """

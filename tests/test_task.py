@@ -28,3 +28,14 @@ def test_prt_sbtsk_and_str_with_subtasks():
     # prt_sbtsk should include nested representation
     assert main.prt_sbtsk() == 'Sub1 {SubSub}, Sub2'
     assert str(main) == 'Main {Sub1 {SubSub}, Sub2}'
+
+
+def test_task_due_date_priority_and_completion():
+    task = Task('Todo', due_date='2025-12-31', priority=2)
+    assert task.due_date == '2025-12-31'
+    assert task.priority == 2
+    assert not task.completed
+    task.mark_completed()
+    assert task.completed
+    task.mark_incomplete()
+    assert not task.completed

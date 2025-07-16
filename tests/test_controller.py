@@ -27,3 +27,15 @@ def test_edit_and_delete_task():
 def test_get_task_name():
     c = create_controller()
     assert c.get_task_name() == 'Main'
+
+
+def test_add_task_with_extras_and_completion():
+    c = create_controller()
+    c.add_task('A', due_date='2025-12-31', priority=1)
+    t = c.get_sub_tasks()[0]
+    assert t.due_date == '2025-12-31'
+    assert t.priority == 1
+    c.mark_task_completed(0)
+    assert c.get_sub_tasks()[0].completed
+    c.mark_task_incomplete(0)
+    assert not c.get_sub_tasks()[0].completed
