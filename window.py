@@ -137,7 +137,7 @@ class Window:
         Confirms the edit of a task and updates the listbox.
 
         Args:
-            task_name_field (tk.StringVar): The variable containing the new task name.
+            task_name_field (tk.Entry): The entry widget containing the new task name.
             selected_index (int): The index of the task being edited.
             confirm_button (tk.Button): The confirm button for editing the task.
         """
