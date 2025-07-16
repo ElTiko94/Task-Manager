@@ -115,6 +115,7 @@ def setup_window(monkeypatch):
     fake_tk = DummyTkModule()
     monkeypatch.setattr(window, 'tk', fake_tk)
     monkeypatch.setattr(window, 'ttk', fake_tk)
+    monkeypatch.setattr(window, 'DateEntry', DummyEntry)
     root = DummyRoot()
     controller = TaskController(Task('Main'))
     return window.Window(root, controller)
@@ -195,6 +196,7 @@ def test_edit_task_prefills_fields(monkeypatch):
     fake_tk.Entry = TrackedEntry
     monkeypatch.setattr(window, 'tk', fake_tk)
     monkeypatch.setattr(window, 'ttk', fake_tk)
+    monkeypatch.setattr(window, 'DateEntry', TrackedEntry)
     root = DummyRoot()
     controller = TaskController(Task('Main'))
     controller.add_task('Existing', due_date='2024-12-31', priority=2)
@@ -219,6 +221,7 @@ def test_edit_subtask_prefills_fields(monkeypatch):
     fake_tk.Entry = TrackEntry
     monkeypatch.setattr(window, 'tk', fake_tk)
     monkeypatch.setattr(window, 'ttk', fake_tk)
+    monkeypatch.setattr(window, 'DateEntry', TrackEntry)
     root = DummyRoot()
     controller = TaskController(Task('Main'))
     parent = Task('Parent')
