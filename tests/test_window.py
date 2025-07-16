@@ -170,6 +170,33 @@ def test_edit_task_prefills_fields(monkeypatch):
     assert entries[2].get() == '2'
 
 
+def test_edit_subtask_prefills_fields(monkeypatch):
+    entries = []
+
+    class TrackEntry(DummyEntry):
+        def __init__(self, *args, textvariable=None, **kwargs):
+            super().__init__(*args, textvariable=textvariable, **kwargs)
+            entries.append(self)
+
+    fake_tk = DummyTkModule()
+    fake_tk.Entry = TrackEntry
+    monkeypatch.setattr(window, 'tk', fake_tk)
+    root = DummyRoot()
+    controller = TaskController(Task('Main'))
+    parent = Task('Parent')
+    parent.add_sub_task(Task('Child', due_date='2025-01-01', priority=5))
+    controller.task.add_sub_task(parent)
+    win = window.Window(root, controller)
+    sub_root = DummyRoot()
+    sub_win = window.Window(sub_root, TaskController(parent))
+    sub_win.listbox.selection = (0,)
+    sub_win.edit_task()
+
+    assert entries[0].get() == 'Child'
+    assert entries[1].get() == '2025-01-01'
+    assert entries[2].get() == '5'
+
+
 def test_sort_button(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task('Low', priority=5)
