@@ -1,7 +1,8 @@
 import os, sys
+import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from task import Task
-from controller import TaskController
+from controller import TaskController, InvalidTaskIndexError
 
 
 def create_controller():
@@ -57,3 +58,14 @@ def test_sort_tasks_by_due_date():
     c.add_task('NoDue')
     c.sort_tasks_by_due_date()
     assert [t.name for t in c.get_sub_tasks()] == ['Sooner', 'Later', 'NoDue']
+
+
+def test_invalid_index_operations():
+    c = create_controller()
+    c.add_task('Only')
+    with pytest.raises(InvalidTaskIndexError):
+        c.edit_task(5, 'X')
+    with pytest.raises(InvalidTaskIndexError):
+        c.delete_task(2)
+    with pytest.raises(InvalidTaskIndexError):
+        c.mark_task_completed(-1)
