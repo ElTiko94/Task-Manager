@@ -169,6 +169,14 @@ class Window:
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.grid(row=0, column=0, sticky="nsew")
 
+        # Ensure the frame and listbox expand when the window is resized
+        if hasattr(self.root, "rowconfigure") and hasattr(self.root, "columnconfigure"):
+            self.root.rowconfigure(0, weight=1)
+            self.root.columnconfigure(0, weight=1)
+        if hasattr(self.main_frame, "rowconfigure") and hasattr(self.main_frame, "columnconfigure"):
+            self.main_frame.rowconfigure(2, weight=1)
+            self.main_frame.columnconfigure(0, weight=1)
+
         ttk.Label(
             self.main_frame, text=f"Sub-tasks for {self.name}: "
         ).grid(row=0, column=0, columnspan=3, pady=2)
