@@ -25,4 +25,5 @@ def load_tasks_from_json(path):
         return Task.from_dict(data)
     except (FileNotFoundError, json.JSONDecodeError, OSError, TypeError) as err:
         logger.warning("Failed to load tasks from %s: %s", path, err)
+        print("Warning:", err)
         return Task("Main")
