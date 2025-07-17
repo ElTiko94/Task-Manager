@@ -11,6 +11,14 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 - Optional due dates and priority levels for tasks
 - Mark tasks as completed
 
+## Color Coding
+The task list uses colors to highlight different states and priorities:
+
+- **Gray**: completed tasks
+- **Red**: tasks past their due date
+- **Orange**: priority `1` tasks
+- **Yellow**: priority `2` tasks
+
 ## Requirements
 - Python 3.7
 - Tkinter (should be included with Python installation; on some Linux
