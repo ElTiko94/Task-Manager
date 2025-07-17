@@ -95,3 +95,35 @@ def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
 
     assert root.destroyed
     assert not asked
+
+
+def test_on_closing_write_failure(tmp_path, monkeypatch):
+    main = Task('Main')
+    main.add_sub_task(Task('Sub'))
+
+    monkeypatch.setattr(tkMessageBox, 'askyesno', lambda *a, **k: True)
+
+    warnings = []
+    monkeypatch.setattr(tkMessageBox, 'showwarning', lambda *a, **k: warnings.append(True))
+
+    class DummyRoot:
+        def __init__(self):
+            self.destroyed = False
+        def destroy(self):
+            self.destroyed = True
+
+    root = DummyRoot()
+
+    original_open = builtins.open
+
+    def fail_open(path, mode='r', *args, **kwargs):
+        if path == 'tasks.json' and 'w' in mode:
+            raise OSError('write failed')
+        return original_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, 'open', fail_open)
+
+    on_closing(main, root)
+
+    assert root.destroyed
+    assert warnings

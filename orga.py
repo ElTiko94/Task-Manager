@@ -56,7 +56,16 @@ def on_closing(task, rt):
 
     save_changes = tkMessageBox.askyesno("Quit", "Save your modification?")
     if save_changes:
-        save_tasks_to_json(task, "tasks.json")
+        try:
+            save_tasks_to_json(task, "tasks.json")
+        except OSError:
+            try:
+                tkMessageBox.showwarning(
+                    "Save Error",
+                    "Failed to save tasks, closing without saving.",
+                )
+            except Exception:
+                pass
     rt.destroy()
 
 
