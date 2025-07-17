@@ -469,6 +469,19 @@ def test_priority_colors(monkeypatch):
     win.controller.add_task('High', priority=1)
     win.controller.add_task('Medium', priority=2)
     win.refresh_window()
-    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'orange'
-    assert win.listbox.itemconfigs.get(1, {}).get('fg') == 'yellow'
+    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'red'
+    assert win.listbox.itemconfigs.get(1, {}).get('fg') == 'orange'
+
+
+def test_priority_completed_overdue_coexist(monkeypatch):
+    win = setup_window(monkeypatch)
+    past = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+    win.controller.add_task('DoneHigh', priority=1)
+    win.controller.mark_task_completed(0)
+    win.controller.add_task('OverdueMedium', due_date=past, priority=2)
+    win.refresh_window()
+    # Completed task should remain gray despite priority
+    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'gray'
+    # Overdue task should be red despite medium priority
+    assert win.listbox.itemconfigs.get(1, {}).get('fg') == 'red'
 
