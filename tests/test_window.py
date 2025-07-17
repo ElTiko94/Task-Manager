@@ -424,3 +424,12 @@ def test_overdue_task_red(monkeypatch):
     win.refresh_window()
     assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'red'
 
+
+def test_priority_colors(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('High', priority=1)
+    win.controller.add_task('Medium', priority=2)
+    win.refresh_window()
+    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'orange'
+    assert win.listbox.itemconfigs.get(1, {}).get('fg') == 'yellow'
+
