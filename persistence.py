@@ -9,7 +9,14 @@ def save_tasks_to_json(task, path):
 
 
 def load_tasks_from_json(path):
-    """Load tasks from a JSON file at ``path`` and return a ``Task``."""
-    with open(path, "r", encoding="utf-8") as fh:
-        data = json.load(fh)
-    return Task.from_dict(data)
+    """Load tasks from a JSON file at ``path`` and return a ``Task``.
+
+    If the file cannot be read or contains invalid JSON, a new ``Task('Main')``
+    is returned instead of raising an exception.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return Task.from_dict(data)
+    except (FileNotFoundError, json.JSONDecodeError, OSError, TypeError):
+        return Task("Main")

@@ -1,4 +1,5 @@
 import os, sys
+import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from task import Task
 from persistence import save_tasks_to_json, load_tasks_from_json
@@ -28,4 +29,17 @@ def test_json_round_trip_optional_fields(tmp_path):
     save_tasks_to_json(task, path)
     loaded = load_tasks_from_json(path)
     assert loaded.to_dict() == task.to_dict()
+
+
+def test_load_tasks_with_invalid_json(tmp_path):
+    bad_path = tmp_path / 'bad.json'
+    bad_path.write_text('{ invalid json', encoding='utf-8')
+
+    try:
+        task = load_tasks_from_json(bad_path)
+    except Exception as exc:
+        pytest.fail(f"Exception propagated: {exc}")
+
+    assert isinstance(task, Task)
+    assert task.name == 'Main'
 
