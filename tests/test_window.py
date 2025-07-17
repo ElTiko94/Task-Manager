@@ -327,6 +327,36 @@ def test_hide_completed(monkeypatch):
     assert [item.split()[0] for item in win.listbox.items] == ['Todo']
 
 
+def test_hide_checkbox_triggers_refresh(monkeypatch):
+    created = {}
+
+    class TrackCheck(DummyCheckbutton):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            created['cb'] = self
+
+    fake_tk = DummyTkModule()
+    fake_tk.Checkbutton = TrackCheck
+    monkeypatch.setattr(window, 'tk', fake_tk)
+    monkeypatch.setattr(window, 'ttk', fake_tk)
+    monkeypatch.setattr(window, 'DateEntry', DummyEntry)
+
+    root = DummyRoot()
+    controller = TaskController(Task('Main'))
+    controller.add_task('Done')
+    controller.add_task('Todo')
+    controller.mark_task_completed(0)
+    win = window.Window(root, controller)
+
+    cb = created.get('cb')
+    assert cb is not None
+    assert cb.command == win.refresh_window
+
+    win.hide_completed_var.set(1)
+    cb.invoke()
+    assert [item.split()[0] for item in win.listbox.items] == ['Todo']
+
+
 def test_double_click_opens_subtasks(monkeypatch):
     called = {}
 
