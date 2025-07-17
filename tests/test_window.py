@@ -59,6 +59,68 @@ class DummyCheckbutton(DummyWidget):
         self.variable = variable
 
 
+class DummyTreeview(DummyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.items = []
+        self.nodes = {}
+        self.children = {}
+        self.bindings = {}
+        self.config_called_with = {}
+        self.tag_configs = {}
+        self._counter = 0
+        self._selection = ()
+
+    def insert(self, parent, index, iid=None, text="", tags=()):
+        if iid is None:
+            iid = f"I{self._counter}"
+            self._counter += 1
+        self.nodes[iid] = {"text": text, "tags": tags, "parent": parent}
+        self.children.setdefault(parent or "", []).append(iid)
+        self.items.append(text)
+        return iid
+
+    def get_children(self, item=None):
+        return list(self.children.get(item or "", []))
+
+    def delete(self, *items):
+        if not items:
+            return
+        for iid in items:
+            self._delete(iid)
+
+    def _delete(self, iid):
+        for child in self.children.get(iid, []):
+            self._delete(child)
+        self.children.pop(iid, None)
+        node = self.nodes.pop(iid, None)
+        if node and node["text"] in self.items:
+            self.items.remove(node["text"])
+
+    def selection(self):
+        return self._selection
+
+    def selection_set(self, iid):
+        if isinstance(iid, (list, tuple)):
+            self._selection = tuple(iid)
+        else:
+            self._selection = (iid,)
+
+    def bind(self, event, func):
+        self.bindings[event] = func
+
+    def yview(self, *args):
+        self.yview_args = args
+
+    def config(self, **kwargs):
+        self.config_called_with.update(kwargs)
+
+    configure = config
+
+    def tag_configure(self, tag, **opts):
+        self.tag_configs[tag] = opts
+
+
 class DummyListbox(DummyWidget):
     END = 'end'
     def __init__(self, *args, **kwargs):
@@ -134,6 +196,7 @@ class DummyTkModule:
     Label = DummyWidget
     Button = DummyWidget
     Entry = DummyEntry
+    Treeview = DummyTreeview
     Listbox = DummyListbox
     Scrollbar = DummyScrollbar
     StringVar = DummyStringVar
@@ -169,17 +232,17 @@ def setup_window(monkeypatch):
 
 def test_window_initial_refresh(monkeypatch):
     win = setup_window(monkeypatch)
-    assert win.listbox.items == []
+    assert win.tree.items == []
     win.controller.add_task('Task1')
     win.refresh_window()
-    assert win.listbox.items == ['Task1']
+    assert win.tree.items == ['Task1']
 
 
 def test_scrollbar_connected(monkeypatch):
     win = setup_window(monkeypatch)
     assert isinstance(win.scrollbar, DummyScrollbar)
-    assert win.scrollbar.command == win.listbox.yview
-    cmd = win.listbox.config_called_with.get('yscrollcommand')
+    assert win.scrollbar.command == win.tree.yview
+    cmd = win.tree.config_called_with.get('yscrollcommand')
     assert getattr(cmd, '__self__', None) is win.scrollbar
 
 
@@ -201,7 +264,7 @@ def test_create_task_button(monkeypatch):
     assert t.due_date == '2025-12-31'
     assert t.priority == 2
     assert t.completed
-    assert win.listbox.items == ['New (Completed) - Due: 2025-12-31 - Priority: 2']
+    assert win.tree.items == ['New (Completed) - Due: 2025-12-31 - Priority: 2']
 
 
 def test_create_task_button_invalid_priority(monkeypatch):
@@ -236,13 +299,14 @@ def test_confirm_edit(monkeypatch):
     prio_var.set('3')
     chk_var = DummyIntVar()
     chk_var.set(1)
-    win.listbox.selection = (0,)
+    item = win.tree.get_children()[0]
+    win.tree.selection_set(item)
     entry = DummyEntry(textvariable=var)
     due_entry = DummyEntry(textvariable=due_var)
     prio_entry = DummyEntry(textvariable=prio_var)
     chk = DummyCheckbutton(variable=chk_var)
     btn = DummyWidget()
-    win.confirm_edit(entry, due_entry, prio_entry, chk_var, chk, (0,), btn)
+    win.confirm_edit(entry, due_entry, prio_entry, chk_var, chk, item, btn)
     t = win.controller.get_sub_tasks()[0]
     assert t.name == 'Updated'
     assert t.due_date == '2026-01-01'
@@ -260,13 +324,14 @@ def test_confirm_edit_invalid_priority(monkeypatch):
     due_var = DummyStringVar(); due_var.set('2026-01-01')
     prio_var = DummyStringVar(); prio_var.set('bad')
     chk_var = DummyIntVar(); chk_var.set(0)
-    win.listbox.selection = (0,)
+    item = win.tree.get_children()[0]
+    win.tree.selection_set(item)
     entry = DummyEntry(textvariable=var)
     due_entry = DummyEntry(textvariable=due_var)
     prio_entry = DummyEntry(textvariable=prio_var)
     chk = DummyCheckbutton(variable=chk_var)
     btn = DummyWidget()
-    win.confirm_edit(entry, due_entry, prio_entry, chk_var, chk, (0,), btn)
+    win.confirm_edit(entry, due_entry, prio_entry, chk_var, chk, item, btn)
     t = win.controller.get_sub_tasks()[0]
     assert t.priority is None
     assert warnings
@@ -290,7 +355,8 @@ def test_edit_task_prefills_fields(monkeypatch):
     controller.add_task('Existing', due_date='2024-12-31', priority=2)
     win = window.Window(root, controller)
     entries.clear()  # ignore widgets created during initialization
-    win.listbox.selection = (0,)
+    item = win.tree.get_children()[0]
+    win.tree.selection_set(item)
     win.edit_task()
 
     assert entries[0].get() == 'Existing'
@@ -320,7 +386,8 @@ def test_edit_subtask_prefills_fields(monkeypatch):
     sub_root = DummyRoot()
     sub_win = window.Window(sub_root, TaskController(parent))
     entries.clear()  # ignore widgets created during initialization
-    sub_win.listbox.selection = (0,)
+    item = sub_win.tree.get_children()[0]
+    sub_win.tree.selection_set(item)
     sub_win.edit_task()
 
     assert entries[0].get() == 'Child'
@@ -349,7 +416,8 @@ def test_edit_task_keeps_vars(monkeypatch):
     controller = TaskController(Task('Main'))
     controller.add_task('X', due_date='2023-01-01', priority=1)
     win = window.Window(root, controller)
-    win.listbox.selection = (0,)
+    item = win.tree.get_children()[0]
+    win.tree.selection_set(item)
     win.edit_task()
 
     dlg = captured['dlg']
@@ -366,7 +434,7 @@ def test_sort_button(monkeypatch):
     win.controller.add_task('None')
     win.sort_tasks_by_priority()
     assert [t.name for t in win.controller.get_sub_tasks()] == ['High', 'Low', 'None']
-    assert [item.split()[0] for item in win.listbox.items] == ['High', 'Low', 'None']
+    assert [item.split()[0] for item in win.tree.items] == ['High', 'Low', 'None']
 
 
 def test_sort_by_due_date(monkeypatch):
@@ -376,7 +444,7 @@ def test_sort_by_due_date(monkeypatch):
     win.controller.add_task('NoDue')
     win.sort_tasks_by_due_date()
     assert [t.name for t in win.controller.get_sub_tasks()] == ['Sooner', 'Later', 'NoDue']
-    assert [item.split()[0] for item in win.listbox.items] == ['Sooner', 'Later', 'NoDue']
+    assert [item.split()[0] for item in win.tree.items] == ['Sooner', 'Later', 'NoDue']
 
 
 def test_search_filter(monkeypatch):
@@ -386,7 +454,7 @@ def test_search_filter(monkeypatch):
     win.controller.add_task('Help')
     win.search_var.set('hel')
     win.refresh_window()
-    assert [item.split()[0] for item in win.listbox.items] == ['Hello', 'Help']
+    assert [item.split()[0] for item in win.tree.items] == ['Hello', 'Help']
 
 
 def test_hide_completed(monkeypatch):
@@ -396,7 +464,7 @@ def test_hide_completed(monkeypatch):
     win.controller.mark_task_completed(0)
     win.hide_completed_var.set(1)
     win.refresh_window()
-    assert [item.split()[0] for item in win.listbox.items] == ['Todo']
+    assert [item.split()[0] for item in win.tree.items] == ['Todo']
 
 
 def test_hide_checkbox_triggers_refresh(monkeypatch):
@@ -426,7 +494,7 @@ def test_hide_checkbox_triggers_refresh(monkeypatch):
 
     win.hide_completed_var.set(1)
     cb.invoke()
-    assert [item.split()[0] for item in win.listbox.items] == ['Todo']
+    assert [item.split()[0] for item in win.tree.items] == ['Todo']
 
 
 def test_double_click_opens_subtasks(monkeypatch):
@@ -439,8 +507,9 @@ def test_double_click_opens_subtasks(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task('A')
     win.refresh_window()
-    win.listbox.selection = (0,)
-    bound = win.listbox.bindings.get('<Double-Button-1>')
+    item = win.tree.get_children()[0]
+    win.tree.selection_set(item)
+    bound = win.tree.bindings.get('<Double-Button-1>')
     assert bound is not None
     bound(None)
     assert called.get('view')
@@ -474,7 +543,8 @@ def test_view_subtasks_uses_toplevel(monkeypatch):
     controller = TaskController(Task('Main'))
     controller.add_task('Sub')
     win = window.Window(root, controller)
-    win.listbox.selection = (0,)
+    item = win.tree.get_children()[0]
+    win.tree.selection_set(item)
 
     win.view_subtasks()
 
@@ -487,7 +557,8 @@ def test_completed_task_gray(monkeypatch):
     win.controller.add_task('Done')
     win.controller.mark_task_completed(0)
     win.refresh_window()
-    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'gray'
+    iid = win.tree.get_children()[0]
+    assert win.tree.nodes[iid]['tags'][0] == 'gray'
 
 
 def test_overdue_task_red(monkeypatch):
@@ -495,7 +566,8 @@ def test_overdue_task_red(monkeypatch):
     past = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
     win.controller.add_task('Late', due_date=past)
     win.refresh_window()
-    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'red'
+    iid = win.tree.get_children()[0]
+    assert win.tree.nodes[iid]['tags'][0] == 'red'
 
 
 def test_due_date_filter_before(monkeypatch):
@@ -505,7 +577,7 @@ def test_due_date_filter_before(monkeypatch):
     win.due_filter_var.set('2025-01-01')
     win.due_before_var.set(1)
     win.refresh_window()
-    assert [item.split()[0] for item in win.listbox.items] == ['Soon']
+    assert [item.split()[0] for item in win.tree.items] == ['Soon']
 
 
 def test_due_date_filter_after(monkeypatch):
@@ -515,7 +587,7 @@ def test_due_date_filter_after(monkeypatch):
     win.due_filter_var.set('2025-01-01')
     win.due_after_var.set(1)
     win.refresh_window()
-    assert [item.split()[0] for item in win.listbox.items] == ['Later']
+    assert [item.split()[0] for item in win.tree.items] == ['Later']
 
 
 def test_priority_filter_above(monkeypatch):
@@ -525,7 +597,7 @@ def test_priority_filter_above(monkeypatch):
     win.priority_filter_var.set('2')
     win.priority_above_var.set(1)
     win.refresh_window()
-    assert [item.split()[0] for item in win.listbox.items] == ['Low']
+    assert [item.split()[0] for item in win.tree.items] == ['Low']
 
 
 def test_priority_filter_below(monkeypatch):
@@ -535,14 +607,15 @@ def test_priority_filter_below(monkeypatch):
     win.priority_filter_var.set('3')
     win.priority_below_var.set(1)
     win.refresh_window()
-    assert [item.split()[0] for item in win.listbox.items] == ['High']
+    assert [item.split()[0] for item in win.tree.items] == ['High']
 def test_priority_colors(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task('High', priority=1)
     win.controller.add_task('Medium', priority=2)
     win.refresh_window()
-    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'red'
-    assert win.listbox.itemconfigs.get(1, {}).get('fg') == 'orange'
+    iid0, iid1 = win.tree.get_children()
+    assert win.tree.nodes[iid0]['tags'][0] == 'red'
+    assert win.tree.nodes[iid1]['tags'][0] == 'orange'
 
 
 def test_priority_completed_overdue_coexist(monkeypatch):
@@ -553,9 +626,10 @@ def test_priority_completed_overdue_coexist(monkeypatch):
     win.controller.add_task('OverdueMedium', due_date=past, priority=2)
     win.refresh_window()
     # Completed task should remain gray despite priority
-    assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'gray'
+    iid0, iid1 = win.tree.get_children()
+    assert win.tree.nodes[iid0]['tags'][0] == 'gray'
     # Overdue task should be red despite medium priority
-    assert win.listbox.itemconfigs.get(1, {}).get('fg') == 'red'
+    assert win.tree.nodes[iid1]['tags'][0] == 'red'
 
 
 def test_view_menu_themes(monkeypatch):
@@ -582,4 +656,17 @@ def test_view_menu_themes(monkeypatch):
     # trigger second theme command
     view_menu.commands[1][1]()
     assert called.get('theme') == 'dark'
+
+
+def test_tree_shows_subtasks(monkeypatch):
+    win = setup_window(monkeypatch)
+    parent = Task('Parent')
+    parent.add_sub_task(Task('Child'))
+    win.controller.task.add_sub_task(parent)
+    win.refresh_window()
+
+    parent_id = win.tree.get_children()[0]
+    child_ids = win.tree.get_children(parent_id)
+    assert len(child_ids) == 1
+    assert win.tree.nodes[child_ids[0]]['text'].startswith('Child')
 

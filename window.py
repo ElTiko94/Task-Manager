@@ -141,8 +141,8 @@ class Window:
         add_task: Displays a dialog to add a new task.
         create_task_button: Creates a new task based on the entered name.
         edit_task: Displays a dialog to edit the selected task.
-        confirm_edit: Confirms the edit of a task and updates the listbox.
-        refresh_window: Refreshes the listbox displaying the tasks.
+        confirm_edit: Confirms the edit of a task and updates the tree view.
+        refresh_window: Refreshes the tree view displaying the tasks.
     """
     def __init__(self, root, controller):
         """
@@ -198,7 +198,7 @@ class Window:
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.grid(row=0, column=0, sticky="nsew")
 
-        # Ensure the frame and listbox expand when the window is resized
+        # Ensure the frame and tree view expand when the window is resized
         if hasattr(self.root, "rowconfigure") and hasattr(self.root, "columnconfigure"):
             self.root.rowconfigure(0, weight=1)
             self.root.columnconfigure(0, weight=1)
@@ -229,17 +229,18 @@ class Window:
         )
         sort_due_btn.grid(row=1, column=2, sticky="ew", padx=2)
 
-        self.listbox = ttk.Listbox(self.main_frame)
-        self.listbox.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=5)
+        self.tree = ttk.Treeview(self.main_frame, show="tree")
+        self.tree.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=5)
+        self.tree_items = {}
 
         self.scrollbar = ttk.Scrollbar(
-            self.main_frame, orient="vertical", command=self.listbox.yview
+            self.main_frame, orient="vertical", command=self.tree.yview
         )
         self.scrollbar.grid(row=2, column=3, sticky="ns")
-        self.listbox.configure(yscrollcommand=self.scrollbar.set)
+        self.tree.configure(yscrollcommand=self.scrollbar.set)
 
         # Bind double-click on a task to open its subtasks
-        self.listbox.bind("<Double-Button-1>", lambda e: self.view_subtasks())
+        self.tree.bind("<Double-Button-1>", lambda e: self.view_subtasks())
 
         btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
         view_subtasks_btn = ttk.Button(
@@ -321,26 +322,34 @@ class Window:
         self.refresh_window()
 
     def view_subtasks(self):
-        """
-        Opens a new window to view the sub-tasks of a selected task.
-        """
-        selected_index = self.listbox.curselection()
-        if not selected_index:
+        """Open a new window to view the subtasks of the selected tree item."""
+        sel = self.tree.selection()
+        if not sel:
             return
 
-        selected_task = self.controller.get_sub_tasks()[selected_index[0]]
+        task, _parent = self.tree_items.get(sel[0], (None, None))
+        if task is None:
+            return
+
         r = tk.Toplevel(self.root)
-        Window(r, TaskController(selected_task))
+        Window(r, TaskController(task))
 
     def delete_task(self):
-        """
-        Deletes the selected task from the task controller.
-        """
-        selected_index = self.listbox.curselection()
-        if not selected_index:
+        """Delete the selected task from the controller."""
+        sel = self.tree.selection()
+        if not sel:
             return
 
-        self.controller.delete_task(selected_index[0])
+        item = sel[0]
+        task, parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+
+        if parent is None:
+            idx = self.controller.get_sub_tasks().index(task)
+            self.controller.delete_task(idx)
+        else:
+            parent.remove_sub_task(task)
         self.refresh_window()
 
     def add_task(self):
@@ -437,12 +446,14 @@ class Window:
         self.refresh_window()
 
     def edit_task(self):
-        """Displays a dialog to edit the selected task using a Toplevel."""
-        selected_index = self.listbox.curselection()
-        if not selected_index:
+        """Display a dialog to edit the selected task."""
+        sel = self.tree.selection()
+        if not sel:
             return
 
-        task = self.controller.get_sub_tasks()[selected_index[0]]
+        task, _parent = self.tree_items.get(sel[0], (None, None))
+        if task is None:
+            return
 
         dialog = tk.Toplevel(self.root)
 
@@ -488,7 +499,7 @@ class Window:
                 priority_entry,
                 completed_var,
                 completed_check,
-                selected_index,
+                sel[0],
                 confirm_button,
                 dialog,
             ),
@@ -502,18 +513,11 @@ class Window:
         priority_entry,
         completed_var,
         completed_check,
-        selected_index,
+        selected_item,
         confirm_button,
         dialog=None,
     ):
-        """
-        Confirms the edit of a task and updates the listbox.
-
-        Args:
-            task_name_field (ttk.Entry): The entry widget containing the new task name.
-            selected_index (int): The index of the task being edited.
-            confirm_button (ttk.Button): The confirm button for editing the task.
-        """
+        """Confirm the edit of ``selected_item`` and refresh the tree."""
         new_name = task_name_field.get()
         new_due = due_date_entry.get()
         priority_text = priority_entry.get()
@@ -538,14 +542,17 @@ class Window:
         if dialog is not None:
             dialog.destroy()
 
-        idx = selected_index[0]
-        self.controller.edit_task(idx, new_name)
-        self.controller.set_task_due_date(idx, new_due or None)
-        self.controller.set_task_priority(idx, new_priority)
+        task, _parent = self.tree_items.get(selected_item, (None, None))
+        if task is None:
+            return
+
+        task.name = new_name
+        task.set_due_date(new_due or None)
+        task.set_priority(new_priority)
         if completed:
-            self.controller.mark_task_completed(idx)
+            task.mark_completed()
         else:
-            self.controller.mark_task_incomplete(idx)
+            task.mark_incomplete()
         self.refresh_window()
 
     def sort_tasks_by_priority(self):
@@ -590,8 +597,10 @@ class Window:
             self.refresh_window()
 
     def refresh_window(self):
-        """Refreshes the listbox displaying the tasks."""
-        self.listbox.delete(0, tk.END)
+        """Refresh the Treeview displaying the tasks."""
+        for child in self.tree.get_children():
+            self.tree.delete(child)
+        self.tree_items.clear()
 
         search_term = self.search_var.get().lower().strip() if hasattr(self, "search_var") else ""
         hide_completed = bool(self.hide_completed_var.get()) if hasattr(self, "hide_completed_var") else False
@@ -602,19 +611,16 @@ class Window:
         above = bool(self.priority_above_var.get()) if hasattr(self, "priority_above_var") else False
         below = bool(self.priority_below_var.get()) if hasattr(self, "priority_below_var") else False
 
-        idx = 0
-        for task in self.controller.get_sub_tasks():
-
+        def add_task_to_tree(task, parent_id="", parent_task=None):
             if not isinstance(task, Task):
-                continue
+                return
 
             if hide_completed and task.completed:
-                continue
+                return
 
             if search_term and search_term not in task.name.lower():
-                continue
+                return
 
-            # Date filtering
             if due_value and (before or after):
                 try:
                     fdate = _datetime.date.fromisoformat(due_value)
@@ -622,11 +628,10 @@ class Window:
                 except ValueError:
                     tdate = None
                 if before and (tdate is None or tdate >= fdate):
-                    continue
+                    return
                 if after and (tdate is None or tdate <= fdate):
-                    continue
+                    return
 
-            # Priority filtering
             if prio_value and (above or below):
                 try:
                     threshold = int(prio_value)
@@ -635,9 +640,9 @@ class Window:
                 if threshold is not None:
                     pval = getattr(task, "priority", None)
                     if above and (pval is None or pval <= threshold):
-                        continue
+                        return
                     if below and (pval is None or pval >= threshold):
-                        continue
+                        return
 
             display = task.name
             if task.completed:
@@ -647,12 +652,6 @@ class Window:
             if getattr(task, "priority", None) is not None:
                 display += f" - Priority: {task.priority}"
 
-            # Determine the index of the item we are about to insert. Using the
-            # current size of the listbox ensures the index matches the
-            # insertion point even when some tasks are filtered out.
-            self.listbox.insert(tk.END, display)
-
-            # Determine the foreground color for this item
             color = "black"
             if task.completed:
                 color = "gray"
@@ -664,7 +663,6 @@ class Window:
                 except ValueError:
                     pass
 
-            # Priority based color should coexist with completion/overdue logic
             prio = getattr(task, "priority", None)
             if not task.completed:
                 if prio == 1:
@@ -672,8 +670,15 @@ class Window:
                 elif prio == 2 and color != "red":
                     color = "orange"
 
-            self.listbox.itemconfig(idx, fg=color)
-            idx += 1
+            self.tree.tag_configure(color, foreground=color)
+            iid = self.tree.insert(parent_id, tk.END, text=display, tags=(color,))
+            self.tree_items[iid] = (task, parent_task)
+
+            for sub in task.get_sub_tasks():
+                add_task_to_tree(sub, iid, task)
+
+        for task in self.controller.get_sub_tasks():
+            add_task_to_tree(task, "", None)
 
     def use_theme(self, theme_name):
         """Change the ttk theme for this window."""
