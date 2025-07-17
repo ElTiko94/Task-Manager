@@ -163,6 +163,14 @@ class Window:
             file_menu.add_command(label="Export to JSON", command=self.export_tasks)
             file_menu.add_command(label="Import from JSON", command=self.import_tasks)
             menubar.add_cascade(label="File", menu=file_menu)
+
+            view_menu = tk.Menu(menubar, tearoff=0)
+            for theme in self.style.theme_names():
+                view_menu.add_command(
+                    label=theme, command=lambda t=theme: self.use_theme(t)
+                )
+            menubar.add_cascade(label="View", menu=view_menu)
+
             self.root.config(menu=menubar)
 
 
