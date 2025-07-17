@@ -1,9 +1,10 @@
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-import pickle
+import json
 import builtins
 from task import Task
 from orga import on_closing, load_tasks, tkMessageBox
+from persistence import load_tasks_from_json, save_tasks_to_json
 
 
 def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
@@ -20,11 +21,11 @@ def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
             self.destroyed = True
 
     root = DummyRoot()
-    file_path = tmp_path / 'object.pkl'
+    file_path = tmp_path / 'tasks.json'
 
     original_open = builtins.open
     def fake_open(path, mode='r', *args, **kwargs):
-        if path == 'object.pkl':
+        if path == 'tasks.json':
             return original_open(file_path, mode, *args, **kwargs)
         return original_open(path, mode, *args, **kwargs)
 
@@ -33,8 +34,7 @@ def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
     on_closing(main, root)
     assert root.destroyed
 
-    with original_open(file_path, 'rb') as f:
-        loaded = pickle.load(f)
+    loaded = load_tasks_from_json(file_path)
 
     assert loaded.name == 'Main'
     loaded_sub = loaded.get_sub_tasks()[0]
@@ -44,26 +44,24 @@ def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
     assert loaded_sub.completed
 
 
-def test_load_tasks_with_corrupt_pickle(tmp_path, monkeypatch):
-    bad_file = tmp_path / 'object.pkl'
-    bad_file.write_bytes(b'not a pickle')
+def test_load_tasks_with_corrupt_json(tmp_path, monkeypatch, capsys):
+    bad_file = tmp_path / 'tasks.json'
+    bad_file.write_text('not json', encoding='utf-8')
 
     original_open = builtins.open
 
-    def fake_open(path, mode='rb', *args, **kwargs):
-        if path == 'object.pkl':
+    def fake_open(path, mode='r', *args, **kwargs):
+        if path == 'tasks.json':
             return original_open(bad_file, mode, *args, **kwargs)
         return original_open(path, mode, *args, **kwargs)
 
     monkeypatch.setattr(builtins, 'open', fake_open)
 
-    warnings = []
-    monkeypatch.setattr(tkMessageBox, 'showwarning', lambda *a, **k: warnings.append(True))
-
     task = load_tasks()
     assert isinstance(task, Task)
     assert task.name == 'Main'
-    assert warnings  # ensure warning was triggered
+    captured = capsys.readouterr()
+    assert 'Warning:' in captured.out
 
 
 def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
@@ -71,14 +69,13 @@ def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
     main = Task('Main')
     main.add_sub_task(Task('Sub'))
 
-    file_path = tmp_path / 'object.pkl'
-    with open(file_path, 'wb') as f:
-        pickle.dump(main, f)
+    file_path = tmp_path / 'tasks.json'
+    save_tasks_to_json(main, file_path)
 
     original_open = builtins.open
 
     def fake_open(path, mode='r', *args, **kwargs):
-        if path == 'object.pkl':
+        if path == 'tasks.json':
             return original_open(file_path, mode, *args, **kwargs)
         return original_open(path, mode, *args, **kwargs)
 
@@ -102,6 +99,7 @@ def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
 
 def test_on_closing_write_failure(tmp_path, monkeypatch):
     main = Task('Main')
+    main.add_sub_task(Task('Sub'))
 
     monkeypatch.setattr(tkMessageBox, 'askyesno', lambda *a, **k: True)
 
@@ -119,7 +117,7 @@ def test_on_closing_write_failure(tmp_path, monkeypatch):
     original_open = builtins.open
 
     def fail_open(path, mode='r', *args, **kwargs):
-        if path == 'object.pkl' and 'w' in mode:
+        if path == 'tasks.json' and 'w' in mode:
             raise OSError('write failed')
         return original_open(path, mode, *args, **kwargs)
 
