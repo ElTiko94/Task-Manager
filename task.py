@@ -138,9 +138,16 @@ class Task:
     def from_dict(cls, data):
         """Create a ``Task`` from a dictionary produced by :py:meth:`to_dict`."""
         name = data.get("name")
+        if not name:
+            name = "Unnamed"
         sub_tasks = [cls.from_dict(d) for d in data.get("sub_tasks", [])]
         due_date = data.get("due_date")
         priority = data.get("priority")
         completed = data.get("completed", False)
-        return cls(name, sub_tasks=sub_tasks, due_date=due_date,
-                   priority=priority, completed=completed)
+        return cls(
+            name,
+            sub_tasks=sub_tasks,
+            due_date=due_date,
+            priority=priority,
+            completed=completed,
+        )

@@ -60,3 +60,14 @@ def test_load_tasks_with_invalid_json(tmp_path):
     assert isinstance(task, Task)
     assert task.name == 'Main'
 
+
+def test_load_without_name_field(tmp_path):
+    """Loading a JSON task without a name should default the name."""
+    path = tmp_path / 'noname.json'
+    path.write_text('{"sub_tasks": []}', encoding='utf-8')
+
+    task = load_tasks_from_json(path)
+
+    assert isinstance(task, Task)
+    assert task.name == 'Unnamed'
+
