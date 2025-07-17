@@ -48,3 +48,15 @@ def test_load_tasks_invalid_json(tmp_path, capsys):
     captured = capsys.readouterr()
     assert 'Warning:' in captured.out
 
+def test_load_tasks_with_invalid_json(tmp_path):
+    bad_path = tmp_path / 'bad.json'
+    bad_path.write_text('{ invalid json', encoding='utf-8')
+
+    try:
+        task = load_tasks_from_json(bad_path)
+    except Exception as exc:
+        pytest.fail(f"Exception propagated: {exc}")
+
+    assert isinstance(task, Task)
+    assert task.name == 'Main'
+

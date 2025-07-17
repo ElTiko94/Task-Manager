@@ -13,6 +13,7 @@ def load_tasks_from_json(path):
 
     If the file cannot be read or contains invalid JSON, a new ``Task('Main')``
     is returned and a warning is printed.
+
     """
     try:
         with open(path, "r", encoding="utf-8") as fh:
