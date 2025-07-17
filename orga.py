@@ -38,7 +38,7 @@ def load_tasks():
     try:
         with open("object.pkl", "rb") as f:
             return pickle.load(f)
-    except (FileNotFoundError, pickle.UnpicklingError, OSError) as err:
+    except (FileNotFoundError, pickle.UnpicklingError, OSError):
         try:
             tkMessageBox.showwarning(
                 "Load Error",
