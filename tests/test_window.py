@@ -108,6 +108,26 @@ class DummyStyle:
             self.used = name
         return self.used
 
+    def theme_names(self):
+        return ["default"]
+
+
+class DummyMenu:
+    def __init__(self, *args, **kwargs):
+        self.commands = []
+        self.cascades = []
+
+    def add_command(self, label=None, command=None):
+        self.commands.append((label, command))
+
+    def add_cascade(self, label=None, menu=None):
+        self.cascades.append((label, menu))
+
+
+class DummyRootWithConfig(DummyRoot):
+    def config(self, **kwargs):
+        self.config_kwargs = kwargs
+
 
 class DummyTkModule:
     END = 'end'
@@ -125,6 +145,16 @@ class DummyTkModule:
     @staticmethod
     def Toplevel(parent=None):
         return DummyRoot()
+
+
+class MenuTkModule(DummyTkModule):
+    Menu = DummyMenu
+    Style = DummyStyle  # overridden later in tests if needed
+
+
+class DummyStyleWithThemes(DummyStyle):
+    def theme_names(self):
+        return ["light", "dark"]
 
 
 def setup_window(monkeypatch):
@@ -471,4 +501,30 @@ def test_priority_colors(monkeypatch):
     win.refresh_window()
     assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'orange'
     assert win.listbox.itemconfigs.get(1, {}).get('fg') == 'yellow'
+
+
+def test_view_menu_themes(monkeypatch):
+    fake_tk = MenuTkModule()
+    fake_tk.Style = DummyStyleWithThemes
+    monkeypatch.setattr(window, 'tk', fake_tk)
+    monkeypatch.setattr(window, 'ttk', fake_tk)
+    monkeypatch.setattr(window, 'DateEntry', DummyEntry)
+    root = DummyRootWithConfig()
+    controller = TaskController(Task('Main'))
+    win = window.Window(root, controller)
+
+    menubar = root.config_kwargs.get('menu')
+    assert isinstance(menubar, DummyMenu)
+    view_menu = None
+    for label, menu in menubar.cascades:
+        if label == 'View':
+            view_menu = menu
+    assert view_menu is not None
+    assert [lbl for lbl, _ in view_menu.commands] == ['light', 'dark']
+
+    called = {}
+    monkeypatch.setattr(win, 'use_theme', lambda t: called.setdefault('theme', t))
+    # trigger second theme command
+    view_menu.commands[1][1]()
+    assert called.get('theme') == 'dark'
 

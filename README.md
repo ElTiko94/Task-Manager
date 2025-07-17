@@ -10,6 +10,7 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 - Save tasks to a file for later retrieval
 - Optional due dates and priority levels for tasks
 - Mark tasks as completed
+- Switch themes from the View menu
 
 ## Color Coding
 The task list uses colors to highlight different states and priorities:
