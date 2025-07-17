@@ -396,6 +396,7 @@ def test_view_subtasks_uses_toplevel(monkeypatch):
 
     monkeypatch.setattr(window, 'tk', fake_tk)
     monkeypatch.setattr(window, 'ttk', fake_tk)
+    monkeypatch.setattr(window, 'DateEntry', DummyEntry)
 
     root = DummyRoot()
     controller = TaskController(Task('Main'))
@@ -425,6 +426,44 @@ def test_overdue_task_red(monkeypatch):
     assert win.listbox.itemconfigs.get(0, {}).get('fg') == 'red'
 
 
+def test_due_date_filter_before(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Soon', due_date='2024-01-01')
+    win.controller.add_task('Later', due_date='2026-01-01')
+    win.due_filter_var.set('2025-01-01')
+    win.due_before_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.listbox.items] == ['Soon']
+
+
+def test_due_date_filter_after(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Soon', due_date='2024-01-01')
+    win.controller.add_task('Later', due_date='2026-01-01')
+    win.due_filter_var.set('2025-01-01')
+    win.due_after_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.listbox.items] == ['Later']
+
+
+def test_priority_filter_above(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Low', priority=5)
+    win.controller.add_task('High', priority=1)
+    win.priority_filter_var.set('2')
+    win.priority_above_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.listbox.items] == ['Low']
+
+
+def test_priority_filter_below(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Low', priority=5)
+    win.controller.add_task('High', priority=1)
+    win.priority_filter_var.set('3')
+    win.priority_below_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.listbox.items] == ['High']
 def test_priority_colors(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task('High', priority=1)

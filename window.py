@@ -235,6 +235,43 @@ class Window:
         )
         filter_btn.grid(row=4, column=2, sticky="ew", padx=2)
 
+        # Additional filtering controls
+        self.due_filter_var = tk.StringVar()
+        self.due_before_var = tk.IntVar()
+        self.due_after_var = tk.IntVar()
+        ttk.Label(self.main_frame, text="Due Date:").grid(row=5, column=0, sticky="e")
+        DateEntry(self.main_frame, textvariable=self.due_filter_var).grid(row=5, column=1)
+        tk.Checkbutton(
+            self.main_frame,
+            text="Before",
+            variable=self.due_before_var,
+            command=self.refresh_window,
+        ).grid(row=5, column=2, sticky="w")
+        tk.Checkbutton(
+            self.main_frame,
+            text="After",
+            variable=self.due_after_var,
+            command=self.refresh_window,
+        ).grid(row=5, column=3, sticky="w")
+
+        self.priority_filter_var = tk.StringVar()
+        self.priority_above_var = tk.IntVar()
+        self.priority_below_var = tk.IntVar()
+        ttk.Label(self.main_frame, text="Priority:").grid(row=6, column=0, sticky="e")
+        ttk.Entry(self.main_frame, textvariable=self.priority_filter_var).grid(row=6, column=1)
+        tk.Checkbutton(
+            self.main_frame,
+            text="Above",
+            variable=self.priority_above_var,
+            command=self.refresh_window,
+        ).grid(row=6, column=2, sticky="w")
+        tk.Checkbutton(
+            self.main_frame,
+            text="Below",
+            variable=self.priority_below_var,
+            command=self.refresh_window,
+        ).grid(row=6, column=3, sticky="w")
+
         self.root.resizable(True, True)
         self.refresh_window()
 
@@ -495,6 +532,12 @@ class Window:
 
         search_term = self.search_var.get().lower().strip() if hasattr(self, "search_var") else ""
         hide_completed = bool(self.hide_completed_var.get()) if hasattr(self, "hide_completed_var") else False
+        due_value = self.due_filter_var.get().strip() if hasattr(self, "due_filter_var") else ""
+        before = bool(self.due_before_var.get()) if hasattr(self, "due_before_var") else False
+        after = bool(self.due_after_var.get()) if hasattr(self, "due_after_var") else False
+        prio_value = self.priority_filter_var.get().strip() if hasattr(self, "priority_filter_var") else ""
+        above = bool(self.priority_above_var.get()) if hasattr(self, "priority_above_var") else False
+        below = bool(self.priority_below_var.get()) if hasattr(self, "priority_below_var") else False
 
         idx = 0
         for task in self.controller.get_sub_tasks():
@@ -507,6 +550,31 @@ class Window:
 
             if search_term and search_term not in task.name.lower():
                 continue
+
+            # Date filtering
+            if due_value and (before or after):
+                try:
+                    fdate = _datetime.date.fromisoformat(due_value)
+                    tdate = _datetime.date.fromisoformat(str(task.due_date)) if getattr(task, "due_date", None) else None
+                except ValueError:
+                    tdate = None
+                if before and (tdate is None or tdate >= fdate):
+                    continue
+                if after and (tdate is None or tdate <= fdate):
+                    continue
+
+            # Priority filtering
+            if prio_value and (above or below):
+                try:
+                    threshold = int(prio_value)
+                except ValueError:
+                    threshold = None
+                if threshold is not None:
+                    pval = getattr(task, "priority", None)
+                    if above and (pval is None or pval <= threshold):
+                        continue
+                    if below and (pval is None or pval >= threshold):
+                        continue
 
             display = task.name
             if task.completed:
