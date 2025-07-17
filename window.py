@@ -10,6 +10,11 @@ Usage:
 
 import tkinter as tk
 import tkinter.ttk as ttk
+
+try:
+    from ttkbootstrap import Style as BootstrapStyle
+except Exception:  # Library not installed or failed to load
+    BootstrapStyle = None
 from tkinter import messagebox as tkMessageBox
 
 import calendar as _calendar
@@ -151,12 +156,24 @@ class Window:
 
 
         # Configure ttk theme for a more modern look
-        self.style = ttk.Style(self.root)
-        try:
-            self.style.theme_use("clam")
-        except Exception:
-            # Fallback silently if theme is unavailable
-            pass
+        if BootstrapStyle is not None:
+            try:
+                self.style = BootstrapStyle(self.root)
+                self.style.theme_use("flatly")
+            except Exception:
+                # Fallback to regular ttk in case of errors
+                self.style = ttk.Style(self.root)
+                try:
+                    self.style.theme_use("clam")
+                except Exception:
+                    pass
+        else:
+            self.style = ttk.Style(self.root)
+            try:
+                self.style.theme_use("clam")
+            except Exception:
+                # Fallback silently if theme is unavailable
+                pass
         # Optional file menu for JSON import/export when available
         if hasattr(tk, "Menu") and hasattr(self.root, "config"):
             menubar = tk.Menu(self.root)
