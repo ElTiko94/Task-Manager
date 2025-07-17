@@ -35,6 +35,11 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 
 5. **Saving Changes**: The application prompts you to save changes when you close the window. Click "Yes" to save changes or "No" to discard them.
 
+6. **Filtering Tasks**: Use the controls below the task list to filter. You can
+   search by name, hide completed tasks, show only tasks due before or after a
+   specific date, and display tasks with priority above or below a chosen
+   threshold. Click "Apply Filter" to update the list.
+
 ## File Structure
 - `orga.py`: Main entry point of the application.
 - `task.py`: Defines the `Task` class representing a single task.
