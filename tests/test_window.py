@@ -132,7 +132,6 @@ def setup_window(monkeypatch):
     monkeypatch.setattr(window, 'tk', fake_tk)
     monkeypatch.setattr(window, 'ttk', fake_tk)
     monkeypatch.setattr(window, 'DateEntry', DummyEntry)
-    monkeypatch.setattr(window, 'DateEntry', DummyEntry)
     root = DummyRoot()
     controller = TaskController(Task('Main'))
     return window.Window(root, controller)
