@@ -7,7 +7,7 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 - Create, edit, and delete tasks
 - View subtasks
 - Add subtasks to a task
-- Save tasks to a file for later retrieval
+- Save tasks to a JSON file for later retrieval
 - Optional due dates and priority levels for tasks
 - Mark tasks as completed
 - Switch themes from the View menu
@@ -55,7 +55,7 @@ The task list uses colors to highlight different states and priorities:
 - `task.py`: Defines the `Task` class representing a single task.
 - `controller.py`: Defines the `TaskController` class for managing tasks.
 - `window.py`: Defines the `Window` class for creating the main GUI window.
-- `object.pkl`: Pickle file to store tasks.
+- `tasks.json`: JSON file to store tasks.
 - `Start.bat`: Windows script to launch the application.
 - `Start.sh`: Shell script to launch the application on Unix systems.
 ## Running Tests
