@@ -26,6 +26,7 @@ import datetime as _datetime
 try:
     from tkcalendar import DateEntry
 except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
+
     class _SimpleCalendar(ttk.Frame):
         """Very small calendar widget with month navigation."""
 
@@ -119,10 +120,12 @@ except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
                 self._popup.destroy()
                 self._popup = None
 
+
 if not hasattr(ttk, "Listbox"):
     ttk.Listbox = tk.Listbox
 from task import Task
 from controller import TaskController
+
 
 class Window:
     """
@@ -144,7 +147,8 @@ class Window:
         confirm_edit: Confirms the edit of a task and updates the tree view.
         refresh_window: Refreshes the tree view displaying the tasks.
     """
-    def __init__(self, root, controller):
+
+    def __init__(self, root, controller, parent_window=None):
         """
         Initializes a new Window object.
 
@@ -155,8 +159,8 @@ class Window:
         self.root = root
         self.task_list = controller.get_sub_tasks()
         self.controller = controller
+        self.parent_window = parent_window
         self.name = controller.get_task_name()
-
 
         # Configure ttk theme for a more modern look
         if BootstrapStyle is not None:
@@ -194,7 +198,6 @@ class Window:
 
             self.root.config(menu=menubar)
 
-
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.grid(row=0, column=0, sticky="nsew")
 
@@ -202,13 +205,15 @@ class Window:
         if hasattr(self.root, "rowconfigure") and hasattr(self.root, "columnconfigure"):
             self.root.rowconfigure(0, weight=1)
             self.root.columnconfigure(0, weight=1)
-        if hasattr(self.main_frame, "rowconfigure") and hasattr(self.main_frame, "columnconfigure"):
+        if hasattr(self.main_frame, "rowconfigure") and hasattr(
+            self.main_frame, "columnconfigure"
+        ):
             self.main_frame.rowconfigure(2, weight=1)
             self.main_frame.columnconfigure(0, weight=1)
 
-        ttk.Label(
-            self.main_frame, text=f"Sub-tasks for {self.name}: "
-        ).grid(row=0, column=0, columnspan=3, pady=2)
+        ttk.Label(self.main_frame, text=f"Sub-tasks for {self.name}: ").grid(
+            row=0, column=0, columnspan=3, pady=2
+        )
 
         btn_opts = {}
         if USE_BOOTSTRAP:
@@ -220,12 +225,18 @@ class Window:
 
         btn_opts = {"bootstyle": "info"} if USE_BOOTSTRAP else {}
         sort_btn = ttk.Button(
-            self.main_frame, text="Sort by Priority", command=self.sort_tasks_by_priority, **btn_opts
+            self.main_frame,
+            text="Sort by Priority",
+            command=self.sort_tasks_by_priority,
+            **btn_opts,
         )
         sort_btn.grid(row=1, column=1, sticky="ew", padx=2)
 
         sort_due_btn = ttk.Button(
-            self.main_frame, text="Sort by Due Date", command=self.sort_tasks_by_due_date, **btn_opts
+            self.main_frame,
+            text="Sort by Due Date",
+            command=self.sort_tasks_by_due_date,
+            **btn_opts,
         )
         sort_due_btn.grid(row=1, column=2, sticky="ew", padx=2)
 
@@ -244,7 +255,10 @@ class Window:
 
         btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
         view_subtasks_btn = ttk.Button(
-            self.main_frame, text="View Subtasks", command=self.view_subtasks, **btn_opts
+            self.main_frame,
+            text="View Subtasks",
+            command=self.view_subtasks,
+            **btn_opts,
         )
         view_subtasks_btn.grid(row=3, column=0, sticky="ew", padx=2, pady=2)
 
@@ -277,7 +291,10 @@ class Window:
 
         btn_opts = {"bootstyle": "primary"} if USE_BOOTSTRAP else {}
         filter_btn = ttk.Button(
-            self.main_frame, text="Apply Filter", command=self.refresh_window, **btn_opts
+            self.main_frame,
+            text="Apply Filter",
+            command=self.refresh_window,
+            **btn_opts,
         )
         filter_btn.grid(row=4, column=2, sticky="ew", padx=2)
 
@@ -286,7 +303,9 @@ class Window:
         self.due_before_var = tk.IntVar()
         self.due_after_var = tk.IntVar()
         ttk.Label(self.main_frame, text="Due Date:").grid(row=5, column=0, sticky="e")
-        DateEntry(self.main_frame, textvariable=self.due_filter_var).grid(row=5, column=1)
+        DateEntry(self.main_frame, textvariable=self.due_filter_var).grid(
+            row=5, column=1
+        )
         tk.Checkbutton(
             self.main_frame,
             text="Before",
@@ -304,7 +323,9 @@ class Window:
         self.priority_above_var = tk.IntVar()
         self.priority_below_var = tk.IntVar()
         ttk.Label(self.main_frame, text="Priority:").grid(row=6, column=0, sticky="e")
-        ttk.Entry(self.main_frame, textvariable=self.priority_filter_var).grid(row=6, column=1)
+        ttk.Entry(self.main_frame, textvariable=self.priority_filter_var).grid(
+            row=6, column=1
+        )
         tk.Checkbutton(
             self.main_frame,
             text="Above",
@@ -332,7 +353,7 @@ class Window:
             return
 
         r = tk.Toplevel(self.root)
-        Window(r, TaskController(task))
+        Window(r, TaskController(task), parent_window=self)
 
     def delete_task(self):
         """Delete the selected task from the controller."""
@@ -351,6 +372,8 @@ class Window:
         else:
             parent.remove_sub_task(task)
         self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
 
     def add_task(self):
         """Displays a dialog to add a new task using a Toplevel window."""
@@ -439,11 +462,15 @@ class Window:
         if dialog is not None:
             dialog.destroy()
 
-        self.controller.add_task(task_name, due_date=due_date or None, priority=priority)
+        self.controller.add_task(
+            task_name, due_date=due_date or None, priority=priority
+        )
         if completed:
             idx = len(self.controller.get_sub_tasks()) - 1
             self.controller.mark_task_completed(idx)
         self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
 
     def edit_task(self):
         """Display a dialog to edit the selected task."""
@@ -554,16 +581,22 @@ class Window:
         else:
             task.mark_incomplete()
         self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
 
     def sort_tasks_by_priority(self):
         """Sort tasks by priority using the controller and refresh the view."""
         self.controller.sort_tasks_by_priority()
         self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
 
     def sort_tasks_by_due_date(self):
         """Sort tasks by due date using the controller and refresh the view."""
         self.controller.sort_tasks_by_due_date()
         self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
 
     def export_tasks(self):
         """Prompt for a path and export tasks as JSON."""
@@ -577,6 +610,7 @@ class Window:
         )
         if path:
             from persistence import save_tasks_to_json
+
             save_tasks_to_json(self.controller.task, path)
 
     def import_tasks(self):
@@ -590,11 +624,14 @@ class Window:
         )
         if path:
             from persistence import load_tasks_from_json
+
             task = load_tasks_from_json(path)
             self.controller.task = task
             self.task_list = task.get_sub_tasks()
             self.name = task.name
             self.refresh_window()
+            if self.parent_window is not None:
+                self.parent_window.refresh_window()
 
     def _task_visible(
         self,
@@ -731,14 +768,40 @@ class Window:
             self.tree.delete(child)
         self.tree_items.clear()
 
-        search_term = self.search_var.get().lower().strip() if hasattr(self, "search_var") else ""
-        hide_completed = bool(self.hide_completed_var.get()) if hasattr(self, "hide_completed_var") else False
-        due_value = self.due_filter_var.get().strip() if hasattr(self, "due_filter_var") else ""
-        before = bool(self.due_before_var.get()) if hasattr(self, "due_before_var") else False
-        after = bool(self.due_after_var.get()) if hasattr(self, "due_after_var") else False
-        prio_value = self.priority_filter_var.get().strip() if hasattr(self, "priority_filter_var") else ""
-        above = bool(self.priority_above_var.get()) if hasattr(self, "priority_above_var") else False
-        below = bool(self.priority_below_var.get()) if hasattr(self, "priority_below_var") else False
+        search_term = (
+            self.search_var.get().lower().strip() if hasattr(self, "search_var") else ""
+        )
+        hide_completed = (
+            bool(self.hide_completed_var.get())
+            if hasattr(self, "hide_completed_var")
+            else False
+        )
+        due_value = (
+            self.due_filter_var.get().strip() if hasattr(self, "due_filter_var") else ""
+        )
+        before = (
+            bool(self.due_before_var.get())
+            if hasattr(self, "due_before_var")
+            else False
+        )
+        after = (
+            bool(self.due_after_var.get()) if hasattr(self, "due_after_var") else False
+        )
+        prio_value = (
+            self.priority_filter_var.get().strip()
+            if hasattr(self, "priority_filter_var")
+            else ""
+        )
+        above = (
+            bool(self.priority_above_var.get())
+            if hasattr(self, "priority_above_var")
+            else False
+        )
+        below = (
+            bool(self.priority_below_var.get())
+            if hasattr(self, "priority_below_var")
+            else False
+        )
 
         for task in self.controller.get_sub_tasks():
             self._insert_task(
