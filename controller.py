@@ -10,6 +10,11 @@ Usage:
 """
 from task import Task
 
+
+class InvalidTaskIndexError(IndexError):
+    """Raised when a provided task index does not exist."""
+
+
 class TaskController:
     """
     Represents a controller for managing tasks in a to-do list.
@@ -54,8 +59,10 @@ class TaskController:
             task_index (int): The index of the task to be edited.
             new_name (str): The new name for the task.
         """
-        task = self.task.get_sub_tasks()[task_index]
-        task.name = new_name
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= task_index < len(sub_tasks):
+            raise InvalidTaskIndexError(task_index)
+        sub_tasks[task_index].name = new_name
 
     def delete_task(self, index):
         """
@@ -64,23 +71,38 @@ class TaskController:
         Args:
             index (int): The index of the task to be deleted.
         """
-        self.task.remove_sub_task(self.get_sub_tasks()[index])
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= index < len(sub_tasks):
+            raise InvalidTaskIndexError(index)
+        self.task.remove_sub_task(sub_tasks[index])
 
     def mark_task_completed(self, index):
         """Mark the task at the given index as completed."""
-        self.get_sub_tasks()[index].mark_completed()
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= index < len(sub_tasks):
+            raise InvalidTaskIndexError(index)
+        sub_tasks[index].mark_completed()
 
     def mark_task_incomplete(self, index):
         """Mark the task at the given index as not completed."""
-        self.get_sub_tasks()[index].mark_incomplete()
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= index < len(sub_tasks):
+            raise InvalidTaskIndexError(index)
+        sub_tasks[index].mark_incomplete()
 
     def set_task_due_date(self, index, due_date):
         """Set the due date for a task at the given index."""
-        self.get_sub_tasks()[index].set_due_date(due_date)
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= index < len(sub_tasks):
+            raise InvalidTaskIndexError(index)
+        sub_tasks[index].set_due_date(due_date)
 
     def set_task_priority(self, index, priority):
         """Set the priority for a task at the given index."""
-        self.get_sub_tasks()[index].set_priority(priority)
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= index < len(sub_tasks):
+            raise InvalidTaskIndexError(index)
+        sub_tasks[index].set_priority(priority)
 
     def get_task_name(self):
         """
