@@ -617,11 +617,13 @@ class Window:
                 except ValueError:
                     pass
 
-            # Priority based color overrides completion/due date colors
-            priority_colors = {1: "orange", 2: "yellow"}
+            # Priority based color should coexist with completion/overdue logic
             prio = getattr(task, "priority", None)
-            if prio in priority_colors:
-                color = priority_colors[prio]
+            if not task.completed:
+                if prio == 1:
+                    color = "red"
+                elif prio == 2 and color != "red":
+                    color = "orange"
 
             self.listbox.itemconfig(idx, fg=color)
             idx += 1
