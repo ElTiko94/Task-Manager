@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 This script demonstrates a simple to-do list application using tkinter.
 It allows users to create, edit, and delete tasks. The tasks can be
