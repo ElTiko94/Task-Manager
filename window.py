@@ -161,7 +161,7 @@ class Window:
         # Configure ttk theme for a more modern look
         if BootstrapStyle is not None:
             try:
-                self.style = BootstrapStyle(self.root)
+                self.style = BootstrapStyle(master=self.root)
                 self.style.theme_use("flatly")
             except Exception:
                 # Fallback to regular ttk in case of errors
