@@ -1,4 +1,5 @@
 import os, sys
+import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from task import Task
 from persistence import save_tasks_to_json, load_tasks_from_json
@@ -29,22 +30,21 @@ def test_json_round_trip_optional_fields(tmp_path):
     loaded = load_tasks_from_json(path)
     assert loaded.to_dict() == task.to_dict()
 
-
 def test_load_tasks_missing_file(tmp_path, capsys):
     path = tmp_path / 'missing.json'
-    loaded = load_tasks_from_json(path)
-    assert isinstance(loaded, Task)
-    assert loaded.name == 'Main'
+    task = load_tasks_from_json(path)
+    assert isinstance(task, Task)
+    assert task.name == 'Main'
     captured = capsys.readouterr()
     assert 'Warning:' in captured.out
 
 
 def test_load_tasks_invalid_json(tmp_path, capsys):
     path = tmp_path / 'bad.json'
-    path.write_text('{invalid}')
-    loaded = load_tasks_from_json(path)
-    assert isinstance(loaded, Task)
-    assert loaded.name == 'Main'
+    path.write_text('{ invalid json', encoding='utf-8')
+    task = load_tasks_from_json(path)
+    assert isinstance(task, Task)
+    assert task.name == 'Main'
     captured = capsys.readouterr()
     assert 'Warning:' in captured.out
 

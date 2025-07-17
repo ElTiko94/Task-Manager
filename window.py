@@ -10,6 +10,7 @@ Usage:
 
 import tkinter as tk
 import tkinter.ttk as ttk
+from tkinter import messagebox as tkMessageBox
 
 import calendar as _calendar
 import datetime as _datetime
@@ -380,7 +381,16 @@ class Window:
         task_name = task_entry.get()
         due_date = due_date_entry.get()
         priority_text = priority_entry.get()
-        priority = int(priority_text) if priority_text else None
+        try:
+            priority = int(priority_text) if priority_text else None
+        except ValueError:
+            priority = None
+            try:
+                tkMessageBox.showwarning(
+                    "Invalid Priority", "Priority must be an integer."
+                )
+            except Exception:
+                pass
         completed = bool(completed_var.get())
 
         task_entry.destroy()
@@ -479,7 +489,16 @@ class Window:
         new_name = task_name_field.get()
         new_due = due_date_entry.get()
         priority_text = priority_entry.get()
-        new_priority = int(priority_text) if priority_text else None
+        try:
+            new_priority = int(priority_text) if priority_text else None
+        except ValueError:
+            new_priority = None
+            try:
+                tkMessageBox.showwarning(
+                    "Invalid Priority", "Priority must be an integer."
+                )
+            except Exception:
+                pass
         completed = bool(completed_var.get())
 
         task_name_field.destroy()

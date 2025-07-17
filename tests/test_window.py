@@ -204,6 +204,26 @@ def test_create_task_button(monkeypatch):
     assert win.listbox.items == ['New (Completed) - Due: 2025-12-31 - Priority: 2']
 
 
+def test_create_task_button_invalid_priority(monkeypatch):
+    win = setup_window(monkeypatch)
+    warnings = []
+    monkeypatch.setattr(window.tkMessageBox, 'showwarning', lambda *a, **k: warnings.append(True))
+    entry = DummyEntry(textvariable=DummyStringVar())
+    due = DummyEntry(textvariable=DummyStringVar())
+    prio = DummyEntry(textvariable=DummyStringVar())
+    chk_var = DummyIntVar()
+    chk = DummyCheckbutton(variable=chk_var)
+    entry.textvariable.set('New')
+    due.textvariable.set('2025-12-31')
+    prio.textvariable.set('bad')
+    chk_var.set(0)
+    btn = DummyWidget()
+    win.create_task_button(entry, due, prio, chk_var, chk, btn)
+    t = win.controller.get_sub_tasks()[0]
+    assert t.priority is None
+    assert warnings
+
+
 def test_confirm_edit(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task('Old')
@@ -228,6 +248,28 @@ def test_confirm_edit(monkeypatch):
     assert t.due_date == '2026-01-01'
     assert t.priority == 3
     assert t.completed
+
+
+def test_confirm_edit_invalid_priority(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task('Old')
+    win.refresh_window()
+    warnings = []
+    monkeypatch.setattr(window.tkMessageBox, 'showwarning', lambda *a, **k: warnings.append(True))
+    var = DummyStringVar(); var.set('Updated')
+    due_var = DummyStringVar(); due_var.set('2026-01-01')
+    prio_var = DummyStringVar(); prio_var.set('bad')
+    chk_var = DummyIntVar(); chk_var.set(0)
+    win.listbox.selection = (0,)
+    entry = DummyEntry(textvariable=var)
+    due_entry = DummyEntry(textvariable=due_var)
+    prio_entry = DummyEntry(textvariable=prio_var)
+    chk = DummyCheckbutton(variable=chk_var)
+    btn = DummyWidget()
+    win.confirm_edit(entry, due_entry, prio_entry, chk_var, chk, (0,), btn)
+    t = win.controller.get_sub_tasks()[0]
+    assert t.priority is None
+    assert warnings
 
 
 def test_edit_task_prefills_fields(monkeypatch):
