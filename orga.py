@@ -73,8 +73,17 @@ def on_closing(task, rt):
 
     save_changes = tkMessageBox.askyesno("Quit", "Save your modification?")
     if save_changes:
-        with open("object.pkl", "wb") as file:
-            pickle.dump(task, file)
+        try:
+            with open("object.pkl", "wb") as file:
+                pickle.dump(task, file)
+        except OSError:
+            try:
+                tkMessageBox.showwarning(
+                    "Save Error",
+                    "Failed to save tasks, closing without saving.",
+                )
+            except Exception:
+                pass
     rt.destroy()
 
 
