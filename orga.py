@@ -51,8 +51,26 @@ def load_tasks():
 
 
 # Main program
+def _tasks_equal(t1, t2):
+    """Return ``True`` if the two task trees are identical."""
+    try:
+        return t1.to_dict() == t2.to_dict()
+    except Exception:
+        return False
+
+
 def on_closing(task, rt):
-    """Function to handle closing event of the application."""
+    """Handle the closing event and optionally save modifications."""
+    try:
+        with open("object.pkl", "rb") as fh:
+            existing = pickle.load(fh)
+    except (FileNotFoundError, pickle.UnpicklingError, OSError):
+        existing = None
+
+    if existing is not None and _tasks_equal(task, existing):
+        rt.destroy()
+        return
+
     save_changes = tkMessageBox.askyesno("Quit", "Save your modification?")
     if save_changes:
         with open("object.pkl", "wb") as file:

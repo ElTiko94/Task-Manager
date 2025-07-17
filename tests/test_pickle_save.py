@@ -64,3 +64,37 @@ def test_load_tasks_with_corrupt_pickle(tmp_path, monkeypatch):
     assert isinstance(task, Task)
     assert task.name == 'Main'
     assert warnings  # ensure warning was triggered
+
+
+def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
+    """Closing without changes should not prompt to save."""
+    main = Task('Main')
+    main.add_sub_task(Task('Sub'))
+
+    file_path = tmp_path / 'object.pkl'
+    with open(file_path, 'wb') as f:
+        pickle.dump(main, f)
+
+    original_open = builtins.open
+
+    def fake_open(path, mode='r', *args, **kwargs):
+        if path == 'object.pkl':
+            return original_open(file_path, mode, *args, **kwargs)
+        return original_open(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, 'open', fake_open)
+
+    asked = []
+    monkeypatch.setattr(tkMessageBox, 'askyesno', lambda *a, **k: asked.append(True))
+
+    class DummyRoot:
+        def __init__(self):
+            self.destroyed = False
+        def destroy(self):
+            self.destroyed = True
+
+    root = DummyRoot()
+    on_closing(main, root)
+
+    assert root.destroyed
+    assert not asked
