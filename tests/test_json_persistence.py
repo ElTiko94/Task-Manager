@@ -29,3 +29,22 @@ def test_json_round_trip_optional_fields(tmp_path):
     loaded = load_tasks_from_json(path)
     assert loaded.to_dict() == task.to_dict()
 
+
+def test_load_tasks_missing_file(tmp_path, capsys):
+    path = tmp_path / 'missing.json'
+    loaded = load_tasks_from_json(path)
+    assert isinstance(loaded, Task)
+    assert loaded.name == 'Main'
+    captured = capsys.readouterr()
+    assert 'Warning:' in captured.out
+
+
+def test_load_tasks_invalid_json(tmp_path, capsys):
+    path = tmp_path / 'bad.json'
+    path.write_text('{invalid}')
+    loaded = load_tasks_from_json(path)
+    assert isinstance(loaded, Task)
+    assert loaded.name == 'Main'
+    captured = capsys.readouterr()
+    assert 'Warning:' in captured.out
+
