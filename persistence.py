@@ -1,5 +1,9 @@
 import json
+import logging
 from task import Task
+
+
+logger = logging.getLogger(__name__)
 
 
 def save_tasks_to_json(task, path):
@@ -20,5 +24,5 @@ def load_tasks_from_json(path):
             data = json.load(fh)
         return Task.from_dict(data)
     except (FileNotFoundError, json.JSONDecodeError, OSError, TypeError) as err:
-        print(f"Warning: Failed to load tasks from {path}: {err}")
+        logger.warning("Failed to load tasks from %s: %s", path, err)
         return Task("Main")
