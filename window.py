@@ -596,6 +596,135 @@ class Window:
             self.name = task.name
             self.refresh_window()
 
+    def _task_visible(
+        self,
+        task,
+        search_term="",
+        hide_completed=False,
+        due_value="",
+        before=False,
+        after=False,
+        prio_value="",
+        above=False,
+        below=False,
+    ):
+        """Return True if ``task`` should be shown with the current filters."""
+        if not isinstance(task, Task):
+            return False
+
+        if hide_completed and task.completed:
+            return False
+
+        if search_term and search_term not in task.name.lower():
+            return False
+
+        if due_value and (before or after):
+            try:
+                fdate = _datetime.date.fromisoformat(due_value)
+                tdate = (
+                    _datetime.date.fromisoformat(str(task.due_date))
+                    if getattr(task, "due_date", None)
+                    else None
+                )
+            except ValueError:
+                tdate = None
+            if before and (tdate is None or tdate >= fdate):
+                return False
+            if after and (tdate is None or tdate <= fdate):
+                return False
+
+        if prio_value and (above or below):
+            try:
+                threshold = int(prio_value)
+            except ValueError:
+                threshold = None
+            if threshold is not None:
+                pval = getattr(task, "priority", None)
+                if above and (pval is None or pval <= threshold):
+                    return False
+                if below and (pval is None or pval >= threshold):
+                    return False
+
+        return True
+
+    def _format_task(self, task):
+        """Return display text and color for ``task``."""
+        display = task.name
+        if task.completed:
+            display += " (Completed)"
+        if getattr(task, "due_date", None):
+            display += f" - Due: {task.due_date}"
+        if getattr(task, "priority", None) is not None:
+            display += f" - Priority: {task.priority}"
+
+        color = "black"
+        if task.completed:
+            color = "gray"
+        elif getattr(task, "due_date", None):
+            try:
+                due = _datetime.date.fromisoformat(str(task.due_date))
+                if due < _datetime.date.today():
+                    color = "red"
+            except ValueError:
+                pass
+
+        prio = getattr(task, "priority", None)
+        if not task.completed:
+            if prio == 1:
+                color = "red"
+            elif prio == 2 and color != "red":
+                color = "orange"
+
+        return display, color
+
+    def _insert_task(
+        self,
+        task,
+        parent_id="",
+        parent_task=None,
+        search_term="",
+        hide_completed=False,
+        due_value="",
+        before=False,
+        after=False,
+        prio_value="",
+        above=False,
+        below=False,
+    ):
+        """Insert ``task`` and its subtasks into the tree if visible."""
+        if not self._task_visible(
+            task,
+            search_term=search_term,
+            hide_completed=hide_completed,
+            due_value=due_value,
+            before=before,
+            after=after,
+            prio_value=prio_value,
+            above=above,
+            below=below,
+        ):
+            return
+
+        display, color = self._format_task(task)
+        self.tree.tag_configure(color, foreground=color)
+        iid = self.tree.insert(parent_id, tk.END, text=display, tags=(color,))
+        self.tree_items[iid] = (task, parent_task)
+
+        for sub in task.get_sub_tasks():
+            self._insert_task(
+                sub,
+                iid,
+                task,
+                search_term,
+                hide_completed,
+                due_value,
+                before,
+                after,
+                prio_value,
+                above,
+                below,
+            )
+
     def refresh_window(self):
         """Refresh the Treeview displaying the tasks."""
         for child in self.tree.get_children():
@@ -611,74 +740,20 @@ class Window:
         above = bool(self.priority_above_var.get()) if hasattr(self, "priority_above_var") else False
         below = bool(self.priority_below_var.get()) if hasattr(self, "priority_below_var") else False
 
-        def add_task_to_tree(task, parent_id="", parent_task=None):
-            if not isinstance(task, Task):
-                return
-
-            if hide_completed and task.completed:
-                return
-
-            if search_term and search_term not in task.name.lower():
-                return
-
-            if due_value and (before or after):
-                try:
-                    fdate = _datetime.date.fromisoformat(due_value)
-                    tdate = _datetime.date.fromisoformat(str(task.due_date)) if getattr(task, "due_date", None) else None
-                except ValueError:
-                    tdate = None
-                if before and (tdate is None or tdate >= fdate):
-                    return
-                if after and (tdate is None or tdate <= fdate):
-                    return
-
-            if prio_value and (above or below):
-                try:
-                    threshold = int(prio_value)
-                except ValueError:
-                    threshold = None
-                if threshold is not None:
-                    pval = getattr(task, "priority", None)
-                    if above and (pval is None or pval <= threshold):
-                        return
-                    if below and (pval is None or pval >= threshold):
-                        return
-
-            display = task.name
-            if task.completed:
-                display += " (Completed)"
-            if getattr(task, "due_date", None):
-                display += f" - Due: {task.due_date}"
-            if getattr(task, "priority", None) is not None:
-                display += f" - Priority: {task.priority}"
-
-            color = "black"
-            if task.completed:
-                color = "gray"
-            elif getattr(task, "due_date", None):
-                try:
-                    due = _datetime.date.fromisoformat(str(task.due_date))
-                    if due < _datetime.date.today():
-                        color = "red"
-                except ValueError:
-                    pass
-
-            prio = getattr(task, "priority", None)
-            if not task.completed:
-                if prio == 1:
-                    color = "red"
-                elif prio == 2 and color != "red":
-                    color = "orange"
-
-            self.tree.tag_configure(color, foreground=color)
-            iid = self.tree.insert(parent_id, tk.END, text=display, tags=(color,))
-            self.tree_items[iid] = (task, parent_task)
-
-            for sub in task.get_sub_tasks():
-                add_task_to_tree(sub, iid, task)
-
         for task in self.controller.get_sub_tasks():
-            add_task_to_tree(task, "", None)
+            self._insert_task(
+                task,
+                "",
+                None,
+                search_term=search_term,
+                hide_completed=hide_completed,
+                due_value=due_value,
+                before=before,
+                after=after,
+                prio_value=prio_value,
+                above=above,
+                below=below,
+            )
 
     def use_theme(self, theme_name):
         """Change the ttk theme for this window."""
