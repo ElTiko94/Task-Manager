@@ -226,6 +226,7 @@ class Window:
             self.main_frame,
             text="Hide completed",
             variable=self.hide_completed_var,
+            command=self.refresh_window,
         )
         hide_check.grid(row=4, column=1, sticky="ew", padx=2)
 
