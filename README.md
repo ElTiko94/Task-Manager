@@ -1,7 +1,7 @@
 # Task-Manager
 
 ## Overview
-The Task-Manager Application is a simple graphical user interface (GUI) application built using Python and Tkinter. It allows users to manage tasks and subtasks in a hierarchical manner.  A modern theme is applied using **ttkbootstrap** when the library is available.
+The Task-Manager Application is a simple graphical user interface (GUI) application built using Python and Tkinter. It allows users to manage tasks and subtasks in a hierarchical manner.  A modern theme is applied using **ttkbootstrap** when the library is available, and key buttons adopt colorful *bootstyles* for a polished look.
 
 ## Features
 - Create, edit, and delete tasks

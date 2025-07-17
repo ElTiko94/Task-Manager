@@ -15,6 +15,9 @@ try:
     from ttkbootstrap import Style as BootstrapStyle
 except Exception:  # Library not installed or failed to load
     BootstrapStyle = None
+
+# Convenience flag used throughout the class to enable ttkbootstrap enhancements
+USE_BOOTSTRAP = BootstrapStyle is not None
 from tkinter import messagebox as tkMessageBox
 
 import calendar as _calendar
@@ -207,18 +210,22 @@ class Window:
             self.main_frame, text=f"Sub-tasks for {self.name}: "
         ).grid(row=0, column=0, columnspan=3, pady=2)
 
+        btn_opts = {}
+        if USE_BOOTSTRAP:
+            btn_opts["bootstyle"] = "success"
         add_task_button = ttk.Button(
-            self.main_frame, text="Add Task", command=self.add_task
+            self.main_frame, text="Add Task", command=self.add_task, **btn_opts
         )
         add_task_button.grid(row=1, column=0, sticky="ew", padx=2)
 
+        btn_opts = {"bootstyle": "info"} if USE_BOOTSTRAP else {}
         sort_btn = ttk.Button(
-            self.main_frame, text="Sort by Priority", command=self.sort_tasks_by_priority
+            self.main_frame, text="Sort by Priority", command=self.sort_tasks_by_priority, **btn_opts
         )
         sort_btn.grid(row=1, column=1, sticky="ew", padx=2)
 
         sort_due_btn = ttk.Button(
-            self.main_frame, text="Sort by Due Date", command=self.sort_tasks_by_due_date
+            self.main_frame, text="Sort by Due Date", command=self.sort_tasks_by_due_date, **btn_opts
         )
         sort_due_btn.grid(row=1, column=2, sticky="ew", padx=2)
 
@@ -234,18 +241,21 @@ class Window:
         # Bind double-click on a task to open its subtasks
         self.listbox.bind("<Double-Button-1>", lambda e: self.view_subtasks())
 
+        btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
         view_subtasks_btn = ttk.Button(
-            self.main_frame, text="View Subtasks", command=self.view_subtasks
+            self.main_frame, text="View Subtasks", command=self.view_subtasks, **btn_opts
         )
         view_subtasks_btn.grid(row=3, column=0, sticky="ew", padx=2, pady=2)
 
+        btn_opts = {"bootstyle": "warning"} if USE_BOOTSTRAP else {}
         edit_button = ttk.Button(
-            self.main_frame, text="Edit", command=self.edit_task
+            self.main_frame, text="Edit", command=self.edit_task, **btn_opts
         )
         edit_button.grid(row=3, column=1, sticky="ew", padx=2)
 
+        btn_opts = {"bootstyle": "danger"} if USE_BOOTSTRAP else {}
         dlt_btn = ttk.Button(
-            self.main_frame, text="Delete", command=self.delete_task
+            self.main_frame, text="Delete", command=self.delete_task, **btn_opts
         )
         dlt_btn.grid(row=3, column=2, sticky="ew", padx=2)
 
@@ -264,8 +274,9 @@ class Window:
         )
         hide_check.grid(row=4, column=1, sticky="ew", padx=2)
 
+        btn_opts = {"bootstyle": "primary"} if USE_BOOTSTRAP else {}
         filter_btn = ttk.Button(
-            self.main_frame, text="Apply Filter", command=self.refresh_window
+            self.main_frame, text="Apply Filter", command=self.refresh_window, **btn_opts
         )
         filter_btn.grid(row=4, column=2, sticky="ew", padx=2)
 
