@@ -162,22 +162,33 @@ class Window:
         self.parent_window = parent_window
         self.name = controller.get_task_name()
 
+        # Determine which theme to apply.  If a parent window exists, re-use its
+        # current theme so that all windows share consistent styling.
+        theme = "flatly" if USE_BOOTSTRAP else "clam"
+        if parent_window is not None and hasattr(parent_window, "style"):
+            try:
+                existing = parent_window.style.theme_use()
+                if existing:
+                    theme = existing
+            except Exception:
+                pass
+
         # Configure ttk theme for a more modern look
         if BootstrapStyle is not None:
             try:
                 self.style = BootstrapStyle(master=self.root)
-                self.style.theme_use("flatly")
+                self.style.theme_use(theme)
             except Exception:
                 # Fallback to regular ttk in case of errors
                 self.style = ttk.Style(self.root)
                 try:
-                    self.style.theme_use("clam")
+                    self.style.theme_use(theme)
                 except Exception:
                     pass
         else:
             self.style = ttk.Style(self.root)
             try:
-                self.style.theme_use("clam")
+                self.style.theme_use(theme)
             except Exception:
                 # Fallback silently if theme is unavailable
                 pass

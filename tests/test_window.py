@@ -727,3 +727,23 @@ def test_subwindow_add_refreshes_parent(monkeypatch):
     child_ids = win.tree.get_children(parent_id)
     assert len(child_ids) == 1
     assert win.tree.nodes[child_ids[0]]["text"].startswith("Child")
+
+
+def test_subwindow_inherits_theme(monkeypatch):
+    fake_tk = MenuTkModule()
+    fake_tk.Style = DummyStyleWithThemes
+    monkeypatch.setattr(window, "tk", fake_tk)
+    monkeypatch.setattr(window, "ttk", fake_tk)
+    monkeypatch.setattr(window, "DateEntry", DummyEntry)
+
+    root = DummyRoot()
+    controller = TaskController(Task("Main"))
+    main_win = window.Window(root, controller)
+    # Change the main window's theme
+    main_win.style.theme_use("dark")
+
+    sub_root = DummyRoot()
+    sub_controller = TaskController(Task("Sub"))
+    sub_win = window.Window(sub_root, sub_controller, parent_window=main_win)
+
+    assert sub_win.style.used == "dark"
