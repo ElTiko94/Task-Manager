@@ -3,7 +3,12 @@ import csv
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from task import Task
-from persistence import save_tasks_to_csv, save_tasks_to_ics
+from persistence import (
+    save_tasks_to_csv,
+    save_tasks_to_ics,
+    load_tasks_from_csv,
+    load_tasks_from_ics,
+)
 
 
 def build_task_tree():
@@ -38,3 +43,30 @@ def test_ics_export(tmp_path):
     assert 'SUMMARY:Sub1' in text
     assert 'SUMMARY:Sub2' in text
     assert 'DUE:20251231T000000Z' in text
+
+
+def test_csv_round_trip(tmp_path):
+    task = build_task_tree()
+    path = tmp_path / 'round.csv'
+    save_tasks_to_csv(task, path)
+    loaded = load_tasks_from_csv(path)
+    assert loaded.name == 'Main'
+    names = [t.name for t in loaded.get_sub_tasks()]
+    assert names == ['Sub1', 'Sub2']
+    assert loaded.due_date == '2025-12-31'
+    assert loaded.priority == 1
+    assert loaded.get_sub_tasks()[0].completed
+
+
+def test_ics_round_trip(tmp_path):
+    task = build_task_tree()
+    path = tmp_path / 'round.ics'
+    save_tasks_to_ics(task, path)
+    loaded = load_tasks_from_ics(path)
+    assert loaded.name == 'Main'
+    names = {t.name for t in loaded.get_sub_tasks()}
+    assert names == {'Sub1', 'Sub2'}
+    assert loaded.due_date == '2025-12-31'
+    assert loaded.priority == 1
+
+

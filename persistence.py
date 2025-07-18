@@ -70,3 +70,80 @@ def save_tasks_to_ics(task, path):
             fh.write(f"STATUS:{'COMPLETED' if t.completed else 'NEEDS-ACTION'}\n")
             fh.write("END:VTODO\n")
         fh.write("END:VCALENDAR\n")
+
+
+def load_tasks_from_csv(path):
+    """Load tasks from a CSV file at ``path`` and return a ``Task``.
+
+    The first row after the header becomes the root task and remaining rows
+    become its direct subtasks.  If loading fails, a new ``Task('Main')`` is
+    returned and a warning is printed.
+    """
+    try:
+        with open(path, newline="", encoding="utf-8") as fh:
+            reader = csv.reader(fh)
+            header = next(reader, None)
+            rows = list(reader)
+        if not rows:
+            return Task("Main")
+        root_row = rows[0]
+        name, due, prio, completed = root_row[:4]
+        priority = int(prio) if prio else None
+        completed = bool(int(completed)) if completed else False
+        root = Task(name, due_date=due or None, priority=priority, completed=completed)
+        for row in rows[1:]:
+            try:
+                r_name, r_due, r_prio, r_comp = row[:4]
+            except ValueError:
+                continue
+            r_priority = int(r_prio) if r_prio else None
+            r_completed = bool(int(r_comp)) if r_comp else False
+            root.add_sub_task(
+                Task(r_name, due_date=r_due or None, priority=r_priority, completed=r_completed)
+            )
+        return root
+    except Exception as err:
+        logger.warning("Failed to load tasks from %s: %s", path, err)
+        print("Warning:", err)
+        return Task("Main")
+
+
+def load_tasks_from_ics(path):
+    """Load tasks from an iCalendar file written by :py:meth:`save_tasks_to_ics`."""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            lines = [line.strip() for line in fh]
+        tasks = []
+        current = None
+        for line in lines:
+            if line == "BEGIN:VTODO":
+                current = {}
+            elif line == "END:VTODO":
+                if current is not None:
+                    name = current.get("SUMMARY", "Unnamed")
+                    due = current.get("DUE")
+                    if due and len(due) >= 8:
+                        due = f"{due[0:4]}-{due[4:6]}-{due[6:8]}"
+                    prio = current.get("PRIORITY")
+                    try:
+                        prio_val = int(prio) if prio else None
+                    except ValueError:
+                        prio_val = None
+                    status = current.get("STATUS", "NEEDS-ACTION").upper()
+                    completed = status == "COMPLETED"
+                    tasks.append(Task(name, due_date=due or None, priority=prio_val, completed=completed))
+                current = None
+            elif current is not None and ":" in line:
+                key, value = line.split(":", 1)
+                current[key] = value
+
+        if not tasks:
+            return Task("Main")
+        root = tasks[0]
+        for t in tasks[1:]:
+            root.add_sub_task(t)
+        return root
+    except Exception as err:
+        logger.warning("Failed to load tasks from %s: %s", path, err)
+        print("Warning:", err)
+        return Task("Main")
