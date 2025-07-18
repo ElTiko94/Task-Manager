@@ -199,7 +199,9 @@ class Window:
             file_menu.add_command(label="Export to JSON", command=self.export_tasks)
             file_menu.add_command(label="Export to CSV", command=self.export_tasks_csv)
             file_menu.add_command(label="Export to ICS", command=self.export_tasks_ics)
-            file_menu.add_command(label="Import from JSON", command=self.import_tasks)
+            file_menu.add_command(label="Import from JSON", command=self.import_tasks_json)
+            file_menu.add_command(label="Import from CSV", command=self.import_tasks_csv)
+            file_menu.add_command(label="Import from ICS", command=self.import_tasks_ics)
             menubar.add_cascade(label="File", menu=file_menu)
 
             view_menu = tk.Menu(menubar, tearoff=0)
@@ -674,7 +676,7 @@ class Window:
 
             save_tasks_to_ics(self.controller.task, path)
 
-    def import_tasks(self):
+    def import_tasks_json(self):
         """Prompt for a JSON file and replace current tasks."""
         if not hasattr(tk, "filedialog"):
             from tkinter import filedialog
@@ -687,6 +689,46 @@ class Window:
             from persistence import load_tasks_from_json
 
             task = load_tasks_from_json(path)
+            self.controller.task = task
+            self.task_list = task.get_sub_tasks()
+            self.name = task.name
+            self.refresh_window()
+            if self.parent_window is not None:
+                self.parent_window.refresh_window()
+
+    def import_tasks_csv(self):
+        """Prompt for a CSV file and replace current tasks."""
+        if not hasattr(tk, "filedialog"):
+            from tkinter import filedialog
+        else:
+            filedialog = tk.filedialog
+        path = filedialog.askopenfilename(
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+        if path:
+            from persistence import load_tasks_from_csv
+
+            task = load_tasks_from_csv(path)
+            self.controller.task = task
+            self.task_list = task.get_sub_tasks()
+            self.name = task.name
+            self.refresh_window()
+            if self.parent_window is not None:
+                self.parent_window.refresh_window()
+
+    def import_tasks_ics(self):
+        """Prompt for an ICS file and replace current tasks."""
+        if not hasattr(tk, "filedialog"):
+            from tkinter import filedialog
+        else:
+            filedialog = tk.filedialog
+        path = filedialog.askopenfilename(
+            filetypes=[("iCalendar files", "*.ics"), ("All files", "*.*")]
+        )
+        if path:
+            from persistence import load_tasks_from_ics
+
+            task = load_tasks_from_ics(path)
             self.controller.task = task
             self.task_list = task.get_sub_tasks()
             self.name = task.name
