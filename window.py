@@ -793,6 +793,21 @@ class Window:
 
     def refresh_window(self):
         """Refresh the Treeview displaying the tasks."""
+        # Capture which tasks are currently expanded so we can restore the
+        # state after rebuilding the tree.  Also remember the currently
+        # selected task, if any.
+        open_tasks = set()
+        selected_task = None
+        for iid, (task, _parent) in self.tree_items.items():
+            try:
+                if self.tree.item(iid, "open"):
+                    open_tasks.add(task)
+            except Exception:
+                pass
+        sel = self.tree.selection()
+        if sel:
+            selected_task = self.tree_items.get(sel[0], (None, None))[0]
+
         for child in self.tree.get_children():
             self.tree.delete(child)
         self.tree_items.clear()
@@ -846,6 +861,20 @@ class Window:
                 above=above,
                 below=below,
             )
+
+        # Restore previously expanded nodes and selection after rebuilding the
+        # tree so that the user's view is preserved.
+        for iid, (task, _parent) in self.tree_items.items():
+            if task in open_tasks:
+                try:
+                    self.tree.item(iid, open=True)
+                except Exception:
+                    pass
+            if selected_task is task:
+                try:
+                    self.tree.selection_set(iid)
+                except Exception:
+                    pass
 
     def use_theme(self, theme_name):
         """Change the ttk theme for this window."""
