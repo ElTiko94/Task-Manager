@@ -8,6 +8,7 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 - View subtasks
 - Add subtasks to a task
 - Save tasks to a JSON file for later retrieval
+- Export tasks to CSV or ICS from the File menu
 - Optional due dates and priority levels for tasks
 - Mark tasks as completed
 - Switch themes from the View menu

@@ -197,6 +197,8 @@ class Window:
             menubar = tk.Menu(self.root)
             file_menu = tk.Menu(menubar, tearoff=0)
             file_menu.add_command(label="Export to JSON", command=self.export_tasks)
+            file_menu.add_command(label="Export to CSV", command=self.export_tasks_csv)
+            file_menu.add_command(label="Export to ICS", command=self.export_tasks_ics)
             file_menu.add_command(label="Import from JSON", command=self.import_tasks)
             menubar.add_cascade(label="File", menu=file_menu)
 
@@ -641,6 +643,36 @@ class Window:
             from persistence import save_tasks_to_json
 
             save_tasks_to_json(self.controller.task, path)
+
+    def export_tasks_csv(self):
+        """Prompt for a path and export tasks as CSV."""
+        if not hasattr(tk, "filedialog"):
+            from tkinter import filedialog
+        else:
+            filedialog = tk.filedialog
+        path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+        )
+        if path:
+            from persistence import save_tasks_to_csv
+
+            save_tasks_to_csv(self.controller.task, path)
+
+    def export_tasks_ics(self):
+        """Prompt for a path and export tasks in ICS format."""
+        if not hasattr(tk, "filedialog"):
+            from tkinter import filedialog
+        else:
+            filedialog = tk.filedialog
+        path = filedialog.asksaveasfilename(
+            defaultextension=".ics",
+            filetypes=[("iCalendar files", "*.ics"), ("All files", "*.*")],
+        )
+        if path:
+            from persistence import save_tasks_to_ics
+
+            save_tasks_to_ics(self.controller.task, path)
 
     def import_tasks(self):
         """Prompt for a JSON file and replace current tasks."""
