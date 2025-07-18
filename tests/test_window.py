@@ -545,6 +545,34 @@ def test_double_click_opens_subtasks(monkeypatch):
     assert called.get("view")
 
 
+def test_right_click_calls_toggle(monkeypatch):
+    called = {}
+
+    def fake_toggle(self):
+        called["toggle"] = True
+
+    monkeypatch.setattr(window.Window, "toggle_completion", fake_toggle)
+    win = setup_window(monkeypatch)
+    win.controller.add_task("A")
+    win.refresh_window()
+    bound = win.tree.bindings.get("<Button-3>")
+    assert bound is not None
+    bound(None)
+    assert called.get("toggle")
+
+
+def test_toggle_completion(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("A")
+    win.refresh_window()
+    iid = win.tree.get_children()[0]
+    win.tree.selection_set(iid)
+    win.toggle_completion()
+    t = win.controller.get_sub_tasks()[0]
+    assert t.completed
+    assert "Completed" in win.tree.items[0]
+
+
 def test_view_subtasks_uses_toplevel(monkeypatch):
     created = {}
 
