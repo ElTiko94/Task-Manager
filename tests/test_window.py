@@ -78,12 +78,14 @@ class DummyTreeview(DummyWidget):
         self.tag_configs = {}
         self._counter = 0
         self._selection = ()
+        self.node_states = {}
 
     def insert(self, parent, index, iid=None, text="", tags=()):
         if iid is None:
             iid = f"I{self._counter}"
             self._counter += 1
         self.nodes[iid] = {"text": text, "tags": tags, "parent": parent}
+        self.node_states[iid] = {"open": False}
         self.children.setdefault(parent or "", []).append(iid)
         self.items.append(text)
         return iid
@@ -100,10 +102,15 @@ class DummyTreeview(DummyWidget):
     def _delete(self, iid):
         for child in self.children.get(iid, []):
             self._delete(child)
+        parent = self.nodes.get(iid, {}).get("parent", "")
+        if parent in self.children:
+            if iid in self.children[parent]:
+                self.children[parent].remove(iid)
         self.children.pop(iid, None)
         node = self.nodes.pop(iid, None)
         if node and node["text"] in self.items:
             self.items.remove(node["text"])
+        self.node_states.pop(iid, None)
 
     def selection(self):
         return self._selection
@@ -127,6 +134,15 @@ class DummyTreeview(DummyWidget):
 
     def tag_configure(self, tag, **opts):
         self.tag_configs[tag] = opts
+
+    def item(self, iid, option=None, **kw):
+        state = self.node_states.setdefault(iid, {"open": False})
+        if kw:
+            if "open" in kw:
+                state["open"] = kw["open"]
+        if option:
+            return state.get(option)
+        return state
 
 
 class DummyListbox(DummyWidget):
@@ -775,3 +791,18 @@ def test_subwindow_inherits_theme(monkeypatch):
     sub_win = window.Window(sub_root, sub_controller, parent_window=main_win)
 
     assert sub_win.style.used == "dark"
+
+
+def test_refresh_preserves_tree_expansion(monkeypatch):
+    win = setup_window(monkeypatch)
+    parent = Task("Parent")
+    parent.add_sub_task(Task("Child"))
+    win.controller.task.add_sub_task(parent)
+    win.refresh_window()
+
+    parent_id = win.tree.get_children()[0]
+    win.tree.item(parent_id, open=True)
+
+    win.refresh_window()
+    parent_id = win.tree.get_children()[0]
+    assert win.tree.item(parent_id, "open") is True
