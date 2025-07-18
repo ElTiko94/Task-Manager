@@ -2,6 +2,7 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import json
 import builtins
+from pathlib import Path
 from task import Task
 from orga import on_closing, load_tasks, tkMessageBox
 from persistence import load_tasks_from_json, save_tasks_to_json
@@ -23,15 +24,7 @@ def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
     root = DummyRoot()
     file_path = tmp_path / 'tasks.json'
 
-    original_open = builtins.open
-    def fake_open(path, mode='r', *args, **kwargs):
-        if path == 'tasks.json':
-            return original_open(file_path, mode, *args, **kwargs)
-        return original_open(path, mode, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, 'open', fake_open)
-
-    on_closing(main, root)
+    on_closing(main, root, file_path)
     assert root.destroyed
 
     loaded = load_tasks_from_json(file_path)
@@ -48,16 +41,7 @@ def test_load_tasks_with_corrupt_json(tmp_path, monkeypatch, capsys):
     bad_file = tmp_path / 'tasks.json'
     bad_file.write_text('not json', encoding='utf-8')
 
-    original_open = builtins.open
-
-    def fake_open(path, mode='r', *args, **kwargs):
-        if path == 'tasks.json':
-            return original_open(bad_file, mode, *args, **kwargs)
-        return original_open(path, mode, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, 'open', fake_open)
-
-    task = load_tasks()
+    task = load_tasks(bad_file)
     assert isinstance(task, Task)
     assert task.name == 'Main'
     captured = capsys.readouterr()
@@ -72,15 +56,6 @@ def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
     file_path = tmp_path / 'tasks.json'
     save_tasks_to_json(main, file_path)
 
-    original_open = builtins.open
-
-    def fake_open(path, mode='r', *args, **kwargs):
-        if path == 'tasks.json':
-            return original_open(file_path, mode, *args, **kwargs)
-        return original_open(path, mode, *args, **kwargs)
-
-    monkeypatch.setattr(builtins, 'open', fake_open)
-
     asked = []
     monkeypatch.setattr(tkMessageBox, 'askyesno', lambda *a, **k: asked.append(True))
 
@@ -91,7 +66,7 @@ def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
             self.destroyed = True
 
     root = DummyRoot()
-    on_closing(main, root)
+    on_closing(main, root, file_path)
 
     assert root.destroyed
     assert not asked
@@ -113,17 +88,18 @@ def test_on_closing_write_failure(tmp_path, monkeypatch):
             self.destroyed = True
 
     root = DummyRoot()
+    file_path = tmp_path / 'tasks.json'
 
     original_open = builtins.open
 
     def fail_open(path, mode='r', *args, **kwargs):
-        if path == 'tasks.json' and 'w' in mode:
+        if Path(path) == file_path and 'w' in mode:
             raise OSError('write failed')
         return original_open(path, mode, *args, **kwargs)
 
     monkeypatch.setattr(builtins, 'open', fail_open)
 
-    on_closing(main, root)
+    on_closing(main, root, file_path)
 
     assert root.destroyed
     assert warnings
