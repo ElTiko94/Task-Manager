@@ -263,6 +263,8 @@ class Window:
 
         # Bind double-click on a task to open its subtasks
         self.tree.bind("<Double-Button-1>", lambda e: self.view_subtasks())
+        # Bind right-click to toggle completion status
+        self.tree.bind("<Button-3>", lambda e: self.toggle_completion())
 
         btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
         view_subtasks_btn = ttk.Button(
@@ -605,6 +607,22 @@ class Window:
     def sort_tasks_by_due_date(self):
         """Sort tasks by due date using the controller and refresh the view."""
         self.controller.sort_tasks_by_due_date()
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def toggle_completion(self):
+        """Toggle the completion state of the selected task."""
+        sel = self.tree.selection()
+        if not sel:
+            return
+
+        item = sel[0]
+        task, _parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+
+        task.completed = not task.completed
         self.refresh_window()
         if self.parent_window is not None:
             self.parent_window.refresh_window()
