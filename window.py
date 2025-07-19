@@ -187,8 +187,11 @@ class Window:
         # ttkbootstrap when a real ``tk.Tk`` instance is supplied; otherwise the
         # themed style may try to create its own root window which breaks unit
         # tests that pass in dummy objects.
+        tk_root_type = getattr(tk, "Tk", None)
         bootstrap_ok = (
-            BootstrapStyle is not None and isinstance(self.root, tk.Tk)
+            BootstrapStyle is not None
+            and isinstance(tk_root_type, type)
+            and isinstance(self.root, tk_root_type)
         )
 
         if bootstrap_ok:
