@@ -33,13 +33,37 @@ class TaskController:
     """
 
     def __init__(self, task):
-        """
-        Initializes a new TaskController object.
-
-        Args:
-            task (Task): The main task managed by the controller.
-        """
+        """Initialize a new TaskController object."""
         self.task = task
+        self.undo_stack = []
+        self.redo_stack = []
+
+    # --- internal helpers -------------------------------------------------
+
+    def _apply(self, op, inverse=False):
+        """Apply ``op`` and optionally return the inverse operation."""
+        action = op.get("action")
+        if action == "add":
+            idx = op["index"]
+            task = op["task"]
+            self.task.sub_tasks.insert(idx, task)
+            if inverse:
+                return {"action": "delete", "index": idx, "task": task}
+        elif action == "delete":
+            idx = op["index"]
+            task = self.task.sub_tasks.pop(idx)
+            if inverse:
+                return {"action": "add", "index": idx, "task": task}
+        elif action == "set":
+            task = op["task"]
+            values = op["values"]
+            inv = {}
+            for attr, val in values.items():
+                inv[attr] = getattr(task, attr)
+                setattr(task, attr, val)
+            if inverse:
+                return {"action": "set", "task": task, "values": inv}
+
 
     def add_task(self, task_name, due_date=None, priority=None):
         """
@@ -50,6 +74,9 @@ class TaskController:
         """
         new_task = Task(task_name, due_date=due_date, priority=priority)
         self.task.add_sub_task(new_task)
+        idx = len(self.task.sub_tasks) - 1
+        self.undo_stack.append({"action": "delete", "index": idx, "task": new_task})
+        self.redo_stack.clear()
 
     def edit_task(self, task_index, new_name):
         """
@@ -62,7 +89,11 @@ class TaskController:
         sub_tasks = self.get_sub_tasks()
         if not 0 <= task_index < len(sub_tasks):
             raise InvalidTaskIndexError(task_index)
-        sub_tasks[task_index].name = new_name
+        task = sub_tasks[task_index]
+        old = task.name
+        task.name = new_name
+        self.undo_stack.append({"action": "set", "task": task, "values": {"name": old}})
+        self.redo_stack.clear()
 
     def delete_task(self, index):
         """
@@ -74,35 +105,54 @@ class TaskController:
         sub_tasks = self.get_sub_tasks()
         if not 0 <= index < len(sub_tasks):
             raise InvalidTaskIndexError(index)
-        self.task.remove_sub_task(sub_tasks[index])
+        task = sub_tasks[index]
+        self.task.remove_sub_task(task)
+        self.undo_stack.append({"action": "add", "index": index, "task": task})
+        self.redo_stack.clear()
 
     def mark_task_completed(self, index):
         """Mark the task at the given index as completed."""
         sub_tasks = self.get_sub_tasks()
         if not 0 <= index < len(sub_tasks):
             raise InvalidTaskIndexError(index)
-        sub_tasks[index].mark_completed()
+        task = sub_tasks[index]
+        prev = task.completed
+        task.mark_completed()
+        self.undo_stack.append({"action": "set", "task": task, "values": {"completed": prev}})
+        self.redo_stack.clear()
 
     def mark_task_incomplete(self, index):
         """Mark the task at the given index as not completed."""
         sub_tasks = self.get_sub_tasks()
         if not 0 <= index < len(sub_tasks):
             raise InvalidTaskIndexError(index)
-        sub_tasks[index].mark_incomplete()
+        task = sub_tasks[index]
+        prev = task.completed
+        task.mark_incomplete()
+        self.undo_stack.append({"action": "set", "task": task, "values": {"completed": prev}})
+        self.redo_stack.clear()
 
     def set_task_due_date(self, index, due_date):
         """Set the due date for a task at the given index."""
         sub_tasks = self.get_sub_tasks()
         if not 0 <= index < len(sub_tasks):
             raise InvalidTaskIndexError(index)
-        sub_tasks[index].set_due_date(due_date)
+        task = sub_tasks[index]
+        prev = task.due_date
+        task.set_due_date(due_date)
+        self.undo_stack.append({"action": "set", "task": task, "values": {"due_date": prev}})
+        self.redo_stack.clear()
 
     def set_task_priority(self, index, priority):
         """Set the priority for a task at the given index."""
         sub_tasks = self.get_sub_tasks()
         if not 0 <= index < len(sub_tasks):
             raise InvalidTaskIndexError(index)
-        sub_tasks[index].set_priority(priority)
+        task = sub_tasks[index]
+        prev = task.priority
+        task.set_priority(priority)
+        self.undo_stack.append({"action": "set", "task": task, "values": {"priority": prev}})
+        self.redo_stack.clear()
 
     def get_task_name(self):
         """
@@ -129,3 +179,21 @@ class TaskController:
     def sort_tasks_by_due_date(self):
         """Sort the controller's sub tasks by due date (None values last)."""
         self.task.sub_tasks.sort(key=lambda t: (t.due_date is None, t.due_date))
+
+    # --- history ---------------------------------------------------------
+
+    def undo(self):
+        """Undo the most recent operation if possible."""
+        if not self.undo_stack:
+            return
+        op = self.undo_stack.pop()
+        redo = self._apply(op, inverse=True)
+        self.redo_stack.append(redo)
+
+    def redo(self):
+        """Redo the most recently undone operation if possible."""
+        if not self.redo_stack:
+            return
+        op = self.redo_stack.pop()
+        undo = self._apply(op, inverse=True)
+        self.undo_stack.append(undo)

@@ -204,6 +204,11 @@ class Window:
             file_menu.add_command(label="Import from ICS", command=self.import_tasks_ics)
             menubar.add_cascade(label="File", menu=file_menu)
 
+            edit_menu = tk.Menu(menubar, tearoff=0)
+            edit_menu.add_command(label="Undo", command=self.undo)
+            edit_menu.add_command(label="Redo", command=self.redo)
+            menubar.add_cascade(label="Edit", menu=edit_menu)
+
             view_menu = tk.Menu(menubar, tearoff=0)
             for theme in self.style.theme_names():
                 view_menu.add_command(
@@ -586,17 +591,27 @@ class Window:
         if dialog is not None:
             dialog.destroy()
 
-        task, _parent = self.tree_items.get(selected_item, (None, None))
+        task, parent = self.tree_items.get(selected_item, (None, None))
         if task is None:
             return
 
-        task.name = new_name
-        task.set_due_date(new_due or None)
-        task.set_priority(new_priority)
-        if completed:
-            task.mark_completed()
+        if parent is None:
+            idx = self.controller.get_sub_tasks().index(task)
+            self.controller.edit_task(idx, new_name)
+            self.controller.set_task_due_date(idx, new_due or None)
+            self.controller.set_task_priority(idx, new_priority)
+            if completed:
+                self.controller.mark_task_completed(idx)
+            else:
+                self.controller.mark_task_incomplete(idx)
         else:
-            task.mark_incomplete()
+            task.name = new_name
+            task.set_due_date(new_due or None)
+            task.set_priority(new_priority)
+            if completed:
+                task.mark_completed()
+            else:
+                task.mark_incomplete()
         self.refresh_window()
         if self.parent_window is not None:
             self.parent_window.refresh_window()
@@ -622,11 +637,32 @@ class Window:
             return
 
         item = sel[0]
-        task, _parent = self.tree_items.get(item, (None, None))
+        task, parent = self.tree_items.get(item, (None, None))
         if task is None:
             return
 
-        task.completed = not task.completed
+        if parent is None:
+            idx = self.controller.get_sub_tasks().index(task)
+            if task.completed:
+                self.controller.mark_task_incomplete(idx)
+            else:
+                self.controller.mark_task_completed(idx)
+        else:
+            task.completed = not task.completed
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def undo(self):
+        """Undo the last task operation."""
+        self.controller.undo()
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def redo(self):
+        """Redo the previously undone task operation."""
+        self.controller.redo()
         self.refresh_window()
         if self.parent_window is not None:
             self.parent_window.refresh_window()
