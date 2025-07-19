@@ -805,6 +805,11 @@ class Window:
         if due_value and (before or after):
             try:
                 fdate = _datetime.date.fromisoformat(due_value)
+            except ValueError:
+                # Invalid user input - skip due date filtering entirely
+                return True
+
+            try:
                 tdate = (
                     _datetime.date.fromisoformat(str(task.due_date))
                     if getattr(task, "due_date", None)
