@@ -88,3 +88,16 @@ def test_undo_and_redo_edit():
     assert c.get_sub_tasks()[0].name == 'A'
     c.redo()
     assert c.get_sub_tasks()[0].name == 'B'
+
+
+def test_move_task_and_undo_redo():
+    c = create_controller()
+    c.add_task('A')
+    c.add_task('B')
+    c.add_task('C')
+    c.move_task(0, 2)
+    assert [t.name for t in c.get_sub_tasks()] == ['B', 'C', 'A']
+    c.undo()
+    assert [t.name for t in c.get_sub_tasks()] == ['A', 'B', 'C']
+    c.redo()
+    assert [t.name for t in c.get_sub_tasks()] == ['B', 'C', 'A']
