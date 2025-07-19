@@ -113,20 +113,6 @@ class TaskController:
         self._redo_stack.clear()
         self._auto_save()
 
-    def move_task(self, old_index, new_index):
-        """Move a task from ``old_index`` to ``new_index`` in the sub task list."""
-        sub_tasks = self.get_sub_tasks()
-        if not 0 <= old_index < len(sub_tasks):
-            raise InvalidTaskIndexError(old_index)
-        if not 0 <= new_index < len(sub_tasks):
-            raise InvalidTaskIndexError(new_index)
-        task = sub_tasks.pop(old_index)
-        # ``list.insert`` appends when index >= len, which handles moves to end
-        sub_tasks.insert(new_index, task)
-        # push inverse for undo
-        self._undo_stack.append(("move", new_index, old_index))
-        self._redo_stack.clear()
-
     def mark_task_completed(self, index):
         """Mark the task at the given index as completed."""
         sub_tasks = self.get_sub_tasks()
