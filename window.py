@@ -132,9 +132,12 @@ else:
         """Safe DateEntry wrapper to handle early style configuration."""
 
         def configure(self, *args, **kwargs):
-            if hasattr(self, "_calendar"):
+            try:
                 return _CalendarDateEntry.configure(self, *args, **kwargs)
-            return _ttk.Entry.configure(self, *args, **kwargs)
+            except AttributeError:
+                # ``tkcalendar`` may call ``configure`` before ``_calendar`` is
+                # initialized when using themed widgets like ``ttkbootstrap``.
+                return _ttk.Entry.configure(self, *args, **kwargs)
 
         config = configure
 
