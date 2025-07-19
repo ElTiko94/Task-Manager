@@ -9,7 +9,8 @@ Usage:
 """
 
 import tkinter as tk
-import tkinter.ttk as ttk
+import tkinter.ttk as _ttk
+ttk = _ttk  # default ttk module
 
 # Try to load ttkbootstrap for optional theming enhancements.  When available
 # we use its ``Style`` class and widget set so ``bootstyle`` keywords work.
@@ -182,17 +183,25 @@ class Window:
         # Configure ttk theme for a more modern look
         if BootstrapStyle is not None:
             try:
-                self.style = BootstrapStyle(master=self.root)
+                try:
+                    self.style = BootstrapStyle(master=self.root)
+                except TypeError:
+                    # Older ttkbootstrap versions do not accept ``master``
+                    self.style = BootstrapStyle()
+                    if hasattr(self.style, "master"):
+                        self.root = self.style.master
                 self.style.theme_use(theme)
             except Exception:
                 # Fallback to regular ttk in case of errors
-                self.style = ttk.Style(self.root)
+                fallback_mod = ttk if ttk is not ttkb else _ttk
+                self.style = fallback_mod.Style(self.root)
                 try:
                     self.style.theme_use(theme)
                 except Exception:
                     pass
         else:
-            self.style = ttk.Style(self.root)
+            fallback_mod = ttk if ttk is not ttkb else _ttk
+            self.style = fallback_mod.Style(self.root)
             try:
                 self.style.theme_use(theme)
             except Exception:
