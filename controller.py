@@ -187,6 +187,7 @@ class TaskController:
         sub_tasks.insert(to_index, task)
         self._undo_stack.append(("move", to_index, from_index))
         self._redo_stack.clear()
+        self._auto_save()
 
     def get_task_name(self):
         """
