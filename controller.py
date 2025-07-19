@@ -171,6 +171,7 @@ class TaskController:
         self._redo_stack.clear()
         self._auto_save()
 
+
     def move_task(self, from_index, to_index):
         """Move a task from ``from_index`` to ``to_index``.
 
@@ -241,6 +242,15 @@ class TaskController:
                 setattr(task, attr, val)
             return ("setattr", index, prev)
         if op_type == "move":
+            old_i, new_i = operation[1], operation[2]
+            sub_tasks = self.get_sub_tasks()
+            if not 0 <= old_i < len(sub_tasks):
+                raise InvalidTaskIndexError(old_i)
+            if not 0 <= new_i < len(sub_tasks):
+                raise InvalidTaskIndexError(new_i)
+            task = sub_tasks.pop(old_i)
+            sub_tasks.insert(new_i, task)
+            return ("move", new_i, old_i)
             from_idx, to_idx = operation[1], operation[2]
             sub_tasks = self.get_sub_tasks()
             if not 0 <= from_idx < len(sub_tasks):

@@ -196,6 +196,7 @@ class Window:
                 try:
                     self.style = BootstrapStyle(master=self.root)
                 except TypeError:
+
                     # Older ttkbootstrap versions do not accept ``master``.  Do
                     # not replace the provided root unless one wasn't supplied
                     # at all.
@@ -211,6 +212,8 @@ class Window:
                     self.style.theme_use(theme)
                 except Exception:
                     pass
+                # Bootstrap is effectively unavailable if initialization fails
+                globals()["USE_BOOTSTRAP"] = False
         else:
             fallback_mod = ttk if ttk is not ttkb else _ttk
             self.style = fallback_mod.Style(self.root)
