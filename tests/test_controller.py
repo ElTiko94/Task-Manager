@@ -1,8 +1,11 @@
-import os, sys
 import pytest
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from task import Task
-from controller import TaskController, InvalidTaskIndexError
+from helpers import load_module
+
+task = load_module("task")
+controller_mod = load_module("controller")
+Task = task.Task
+TaskController = controller_mod.TaskController
+InvalidTaskIndexError = controller_mod.InvalidTaskIndexError
 
 
 def create_controller():
@@ -88,3 +91,23 @@ def test_undo_and_redo_edit():
     assert c.get_sub_tasks()[0].name == 'A'
     c.redo()
     assert c.get_sub_tasks()[0].name == 'B'
+
+
+def test_move_task_changes_order():
+    c = create_controller()
+    c.add_task('A')
+    c.add_task('B')
+    c.add_task('C')
+    c.move_task(0, 2)
+    assert [t.name for t in c.get_sub_tasks()] == ['B', 'C', 'A']
+
+
+def test_undo_redo_move(monkeypatch=None):
+    c = create_controller()
+    c.add_task('A')
+    c.add_task('B')
+    c.move_task(0, 1)
+    c.undo()
+    assert [t.name for t in c.get_sub_tasks()] == ['A', 'B']
+    c.redo()
+    assert [t.name for t in c.get_sub_tasks()] == ['B', 'A']

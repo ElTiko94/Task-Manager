@@ -1,7 +1,7 @@
-import os, sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import pytest
-from task import Task
+from helpers import load_module
+
+Task = load_module("task").Task
 
 
 def test_task_str_without_subtasks():

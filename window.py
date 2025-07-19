@@ -9,12 +9,19 @@ Usage:
 """
 
 import tkinter as tk
-import tkinter.ttk as ttk
+import tkinter.ttk as _ttk
+ttk = _ttk  # default ttk module
 
+# Try to load ttkbootstrap for optional theming enhancements.  When available
+# we use its ``Style`` class and widget set so ``bootstyle`` keywords work.
 try:
     from ttkbootstrap import Style as BootstrapStyle
+    import ttkbootstrap as ttkb
 except Exception:  # Library not installed or failed to load
     BootstrapStyle = None
+    ttkb = None
+else:
+    ttk = ttkb
 
 # Convenience flag used throughout the class to enable ttkbootstrap enhancements
 USE_BOOTSTRAP = BootstrapStyle is not None
@@ -159,6 +166,8 @@ class Window:
         self.root = root
         self.task_list = controller.get_sub_tasks()
         self.controller = controller
+        # Expose current save path for convenience
+        self.file_path = controller.save_path
         self.parent_window = parent_window
         self.name = controller.get_task_name()
 
@@ -176,13 +185,20 @@ class Window:
         # Configure ttk theme for a more modern look
         if BootstrapStyle is not None:
             try:
-                self.style = BootstrapStyle(master=self.root)
+                try:
+                    self.style = BootstrapStyle(master=self.root)
+                except TypeError:
+                    # Older ttkbootstrap versions do not accept ``master``
+                    self.style = BootstrapStyle()
+                    if hasattr(self.style, "master"):
+                        self.root = self.style.master
                 self.style.theme_use(theme)
             except Exception:
                 # Fallback to regular ttk in case of errors. If the selected
                 # theme was the bootstrap default, revert to the default ttk
                 # theme; otherwise preserve the parent's choice.
-                self.style = ttk.Style(self.root)
+                fallback_mod = ttk if ttk is not ttkb else _ttk
+                self.style = fallback_mod.Style(self.root)
                 if theme == "flatly":
                     theme = "clam"
                 try:
@@ -192,7 +208,8 @@ class Window:
                 # Bootstrap is effectively unavailable if initialization fails
                 globals()["USE_BOOTSTRAP"] = False
         else:
-            self.style = ttk.Style(self.root)
+            fallback_mod = ttk if ttk is not ttkb else _ttk
+            self.style = fallback_mod.Style(self.root)
             try:
                 self.style.theme_use(theme)
             except Exception:
@@ -306,9 +323,27 @@ class Window:
         )
         dlt_btn.grid(row=3, column=2, sticky="ew", padx=2)
 
+        btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
+        up_btn = ttk.Button(
+            self.main_frame,
+            text="Move Up",
+            command=self.move_selected_up,
+            **btn_opts,
+        )
+        up_btn.grid(row=3, column=3, sticky="ew", padx=2)
+
+        down_btn = ttk.Button(
+            self.main_frame,
+            text="Move Down",
+            command=self.move_selected_down,
+            **btn_opts,
+        )
+        down_btn.grid(row=3, column=4, sticky="ew", padx=2)
+
         # --- Filtering widgets ---
         self.search_var = tk.StringVar()
         self.hide_completed_var = tk.IntVar()
+        self.show_completed_only_var = tk.IntVar()
 
         search_entry = ttk.Entry(self.main_frame, textvariable=self.search_var)
         search_entry.grid(row=4, column=0, sticky="ew", padx=2)
@@ -321,6 +356,14 @@ class Window:
         )
         hide_check.grid(row=4, column=1, sticky="ew", padx=2)
 
+        show_only_check = tk.Checkbutton(
+            self.main_frame,
+            text="Show completed only",
+            variable=self.show_completed_only_var,
+            command=self.refresh_window,
+        )
+        show_only_check.grid(row=4, column=2, sticky="ew", padx=2)
+
         btn_opts = {"bootstyle": "primary"} if USE_BOOTSTRAP else {}
         filter_btn = ttk.Button(
             self.main_frame,
@@ -328,7 +371,7 @@ class Window:
             command=self.refresh_window,
             **btn_opts,
         )
-        filter_btn.grid(row=4, column=2, sticky="ew", padx=2)
+        filter_btn.grid(row=4, column=3, sticky="ew", padx=2)
 
         # Additional filtering controls
         self.due_filter_var = tk.StringVar()
@@ -630,6 +673,56 @@ class Window:
         if self.parent_window is not None:
             self.parent_window.refresh_window()
 
+    def move_selected_up(self):
+        """Move the selected task up in the list."""
+        sel = self.tree.selection()
+        if not sel:
+            return
+        item = sel[0]
+        task, parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+        if parent is None:
+            lst = self.controller.get_sub_tasks()
+            idx = lst.index(task)
+            if idx == 0:
+                return
+            self.controller.move_task(idx, idx - 1)
+        else:
+            lst = parent.get_sub_tasks()
+            idx = lst.index(task)
+            if idx == 0:
+                return
+            lst.insert(idx - 1, lst.pop(idx))
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def move_selected_down(self):
+        """Move the selected task down in the list."""
+        sel = self.tree.selection()
+        if not sel:
+            return
+        item = sel[0]
+        task, parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+        if parent is None:
+            lst = self.controller.get_sub_tasks()
+            idx = lst.index(task)
+            if idx >= len(lst) - 1:
+                return
+            self.controller.move_task(idx, idx + 1)
+        else:
+            lst = parent.get_sub_tasks()
+            idx = lst.index(task)
+            if idx >= len(lst) - 1:
+                return
+            lst.insert(idx + 1, lst.pop(idx))
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
     def toggle_completion(self):
         """Toggle the completion state of the selected task."""
         sel = self.tree.selection()
@@ -776,6 +869,7 @@ class Window:
         task,
         search_term="",
         hide_completed=False,
+        show_completed_only=False,
         due_value="",
         before=False,
         after=False,
@@ -787,6 +881,9 @@ class Window:
         if not isinstance(task, Task):
             return False
 
+        if show_completed_only and not task.completed:
+            return False
+
         if hide_completed and task.completed:
             return False
 
@@ -796,6 +893,11 @@ class Window:
         if due_value and (before or after):
             try:
                 fdate = _datetime.date.fromisoformat(due_value)
+            except ValueError:
+                # Invalid user input - skip due date filtering entirely
+                return True
+
+            try:
                 tdate = (
                     _datetime.date.fromisoformat(str(task.due_date))
                     if getattr(task, "due_date", None)
@@ -859,6 +961,7 @@ class Window:
         parent_task=None,
         search_term="",
         hide_completed=False,
+        show_completed_only=False,
         due_value="",
         before=False,
         after=False,
@@ -871,6 +974,7 @@ class Window:
             task,
             search_term=search_term,
             hide_completed=hide_completed,
+            show_completed_only=show_completed_only,
             due_value=due_value,
             before=before,
             after=after,
@@ -892,6 +996,7 @@ class Window:
                 task,
                 search_term,
                 hide_completed,
+                show_completed_only,
                 due_value,
                 before,
                 after,
@@ -929,6 +1034,11 @@ class Window:
             if hasattr(self, "hide_completed_var")
             else False
         )
+        show_completed_only = (
+            bool(self.show_completed_only_var.get())
+            if hasattr(self, "show_completed_only_var")
+            else False
+        )
         due_value = (
             self.due_filter_var.get().strip() if hasattr(self, "due_filter_var") else ""
         )
@@ -963,6 +1073,7 @@ class Window:
                 None,
                 search_term=search_term,
                 hide_completed=hide_completed,
+                show_completed_only=show_completed_only,
                 due_value=due_value,
                 before=before,
                 after=after,

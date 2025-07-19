@@ -1,12 +1,19 @@
-import os, sys
 import logging
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-import json
 import builtins
 from pathlib import Path
-from task import Task
-from orga import on_closing, load_tasks, tkMessageBox
-from persistence import load_tasks_from_json, save_tasks_to_json
+from helpers import load_module
+
+task = load_module("task")
+_ = load_module("window")
+orga_mod = load_module("orga")
+persistence_mod = load_module("persistence")
+
+Task = task.Task
+on_closing = orga_mod.on_closing
+load_tasks = orga_mod.load_tasks
+tkMessageBox = orga_mod.tkMessageBox
+load_tasks_from_json = persistence_mod.load_tasks_from_json
+save_tasks_to_json = persistence_mod.save_tasks_to_json
 
 
 def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
@@ -46,7 +53,7 @@ def test_load_tasks_with_corrupt_json(tmp_path, monkeypatch, caplog):
         task = load_tasks(bad_file)
     assert isinstance(task, Task)
     assert task.name == 'Main'
-    assert any('Warning:' in rec.getMessage() for rec in caplog.records)
+    assert any('Failed to load tasks' in rec.getMessage() for rec in caplog.records)
 
 
 def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):

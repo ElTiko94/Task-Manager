@@ -1,9 +1,12 @@
-import os, sys
 import pytest
 import logging
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from task import Task
-from persistence import save_tasks_to_json, load_tasks_from_json
+from helpers import load_module
+
+task = load_module("task")
+persistence_mod = load_module("persistence")
+Task = task.Task
+save_tasks_to_json = persistence_mod.save_tasks_to_json
+load_tasks_from_json = persistence_mod.load_tasks_from_json
 
 
 def build_task_tree():
@@ -71,4 +74,17 @@ def test_load_without_name_field(tmp_path):
 
     assert isinstance(task, Task)
     assert task.name == 'Unnamed'
+
+
+def test_load_tasks_with_json_array(tmp_path, caplog):
+    """A JSON array should be treated as invalid input."""
+    path = tmp_path / 'array.json'
+    path.write_text('[1, 2, 3]', encoding='utf-8')
+
+    with caplog.at_level(logging.WARNING):
+        task = load_tasks_from_json(path)
+
+    assert isinstance(task, Task)
+    assert task.name == 'Main'
+    assert any('Invalid JSON structure' in rec.getMessage() for rec in caplog.records)
 
