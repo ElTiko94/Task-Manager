@@ -69,6 +69,12 @@ def test_invalid_index_operations():
         c.delete_task(2)
     with pytest.raises(InvalidTaskIndexError):
         c.mark_task_completed(-1)
+    # moving with an invalid from_index
+    with pytest.raises(InvalidTaskIndexError):
+        c.move_task(1, 0)
+    # moving with an invalid to_index
+    with pytest.raises(InvalidTaskIndexError):
+        c.move_task(0, 2)
 
 
 def test_undo_and_redo_add():

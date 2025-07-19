@@ -136,7 +136,12 @@ class TaskController:
         self._redo_stack.clear()
 
     def move_task(self, from_index, to_index):
-        """Move a task from ``from_index`` to ``to_index``."""
+        """Move a task from ``from_index`` to ``to_index``.
+
+        ``to_index`` may be equal to ``len(sub_tasks)`` to move the item to the
+        end of the list.  ``InvalidTaskIndexError`` is raised if either index is
+        out of range.
+        """
         sub_tasks = self.get_sub_tasks()
         if not 0 <= from_index < len(sub_tasks):
             raise InvalidTaskIndexError(from_index)
@@ -200,8 +205,10 @@ class TaskController:
         if op_type == "move":
             from_idx, to_idx = operation[1], operation[2]
             sub_tasks = self.get_sub_tasks()
-            if not 0 <= from_idx < len(sub_tasks) or not 0 <= to_idx <= len(sub_tasks):
+            if not 0 <= from_idx < len(sub_tasks):
                 raise InvalidTaskIndexError(from_idx)
+            if not 0 <= to_idx <= len(sub_tasks):
+                raise InvalidTaskIndexError(to_idx)
             task = sub_tasks.pop(from_idx)
             sub_tasks.insert(to_idx, task)
             return ("move", to_idx, from_idx)
