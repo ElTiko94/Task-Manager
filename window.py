@@ -37,7 +37,34 @@ else:
             if hasattr(self, "style"):
                 self.style.configure(style, **kw)
 
-        builder.create_date_frame_style = _ignore
+        # Older ttkbootstrap versions shipped before tkcalendar support was
+        # added.  ``tkcalendar`` looks for several ``create_date_*`` methods
+        # when applying its themed styles.  Define benign fallbacks for all of
+        # them so that style creation simply configures the style without
+        # raising ``AttributeError`` when these methods are missing.
+        missing = [
+            "create_date_frame_style",
+            "create_date_toplevel_style",
+            "create_date_entry_style",
+            "create_date_label_style",
+        ]
+        for name in missing:
+            setattr(builder, name, _ignore)
+
+        # ``name_to_method`` resolves method names dynamically and will raise
+        # ``AttributeError`` if a method is absent.  Wrap it so unknown style
+        # methods fall back to ``_ignore`` instead.
+        orig_name_to_method = builder.name_to_method
+
+        def _safe_name_to_method(self, name):
+            try:
+                return orig_name_to_method(self, name)
+            except AttributeError:
+                if name in missing:
+                    return _ignore
+                raise
+
+        builder.name_to_method = _safe_name_to_method
 
 # Convenience flag used throughout the class to enable ttkbootstrap enhancements
 USE_BOOTSTRAP = BootstrapStyle is not None
