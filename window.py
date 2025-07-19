@@ -210,7 +210,11 @@ class Window:
             menubar.add_cascade(label="Edit", menu=edit_menu)
 
             view_menu = tk.Menu(menubar, tearoff=0)
-            for theme in self.style.theme_names():
+            theme_names = list(self.style.theme_names())
+            current = self.style.theme_use()
+            if current not in theme_names:
+                theme_names.insert(0, current)
+            for theme in theme_names:
                 view_menu.add_command(
                     label=theme, command=lambda t=theme: self.use_theme(t)
                 )
