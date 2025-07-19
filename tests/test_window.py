@@ -699,6 +699,16 @@ def test_due_date_filter_after(monkeypatch):
     assert [item.split()[0] for item in win.tree.items] == ["Later"]
 
 
+def test_due_date_filter_invalid_input(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("Soon", due_date="2024-01-01")
+    win.controller.add_task("Later", due_date="2026-01-01")
+    win.due_filter_var.set("invalid")
+    win.due_before_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.tree.items] == ["Soon", "Later"]
+
+
 def test_priority_filter_above(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task("Low", priority=5)
