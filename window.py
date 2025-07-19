@@ -169,6 +169,7 @@ class Window:
         # Expose current save path for convenience
         self.file_path = controller.save_path
         self.parent_window = parent_window
+        self.child_windows = []
         self.name = controller.get_task_name()
 
         # Determine which theme to apply.  If a parent window exists, re-use its
@@ -447,7 +448,18 @@ class Window:
             return
 
         r = tk.Toplevel(self.root)
-        Window(r, TaskController(task), parent_window=self)
+        sub = Window(r, TaskController(task), parent_window=self)
+        self.child_windows.append(sub)
+
+        def _close():
+            try:
+                self.child_windows.remove(sub)
+            except ValueError:
+                pass
+            r.destroy()
+
+        if hasattr(r, "protocol"):
+            r.protocol("WM_DELETE_WINDOW", _close)
 
     def delete_task(self):
         """Delete the selected task from the controller."""
