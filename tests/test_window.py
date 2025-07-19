@@ -538,6 +538,16 @@ def test_hide_completed(monkeypatch):
     assert [item.split()[0] for item in win.tree.items] == ["Todo"]
 
 
+def test_show_completed_only(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("Done")
+    win.controller.add_task("Todo")
+    win.controller.mark_task_completed(0)
+    win.show_completed_only_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.tree.items] == ["Done"]
+
+
 def test_hide_checkbox_triggers_refresh(monkeypatch):
     created = {}
 

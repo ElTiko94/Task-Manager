@@ -337,6 +337,7 @@ class Window:
         # --- Filtering widgets ---
         self.search_var = tk.StringVar()
         self.hide_completed_var = tk.IntVar()
+        self.show_completed_only_var = tk.IntVar()
 
         search_entry = ttk.Entry(self.main_frame, textvariable=self.search_var)
         search_entry.grid(row=4, column=0, sticky="ew", padx=2)
@@ -349,6 +350,14 @@ class Window:
         )
         hide_check.grid(row=4, column=1, sticky="ew", padx=2)
 
+        show_only_check = tk.Checkbutton(
+            self.main_frame,
+            text="Show completed only",
+            variable=self.show_completed_only_var,
+            command=self.refresh_window,
+        )
+        show_only_check.grid(row=4, column=2, sticky="ew", padx=2)
+
         btn_opts = {"bootstyle": "primary"} if USE_BOOTSTRAP else {}
         filter_btn = ttk.Button(
             self.main_frame,
@@ -356,7 +365,7 @@ class Window:
             command=self.refresh_window,
             **btn_opts,
         )
-        filter_btn.grid(row=4, column=2, sticky="ew", padx=2)
+        filter_btn.grid(row=4, column=3, sticky="ew", padx=2)
 
         # Additional filtering controls
         self.due_filter_var = tk.StringVar()
@@ -854,6 +863,7 @@ class Window:
         task,
         search_term="",
         hide_completed=False,
+        show_completed_only=False,
         due_value="",
         before=False,
         after=False,
@@ -863,6 +873,9 @@ class Window:
     ):
         """Return True if ``task`` should be shown with the current filters."""
         if not isinstance(task, Task):
+            return False
+
+        if show_completed_only and not task.completed:
             return False
 
         if hide_completed and task.completed:
@@ -937,6 +950,7 @@ class Window:
         parent_task=None,
         search_term="",
         hide_completed=False,
+        show_completed_only=False,
         due_value="",
         before=False,
         after=False,
@@ -949,6 +963,7 @@ class Window:
             task,
             search_term=search_term,
             hide_completed=hide_completed,
+            show_completed_only=show_completed_only,
             due_value=due_value,
             before=before,
             after=after,
@@ -970,6 +985,7 @@ class Window:
                 task,
                 search_term,
                 hide_completed,
+                show_completed_only,
                 due_value,
                 before,
                 after,
@@ -1007,6 +1023,11 @@ class Window:
             if hasattr(self, "hide_completed_var")
             else False
         )
+        show_completed_only = (
+            bool(self.show_completed_only_var.get())
+            if hasattr(self, "show_completed_only_var")
+            else False
+        )
         due_value = (
             self.due_filter_var.get().strip() if hasattr(self, "due_filter_var") else ""
         )
@@ -1041,6 +1062,7 @@ class Window:
                 None,
                 search_term=search_term,
                 hide_completed=hide_completed,
+                show_completed_only=show_completed_only,
                 due_value=due_value,
                 before=before,
                 after=after,
