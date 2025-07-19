@@ -26,12 +26,15 @@ The task list uses colors to highlight different states and priorities:
 - Tkinter (should be included with Python installation; on some Linux
   systems you may need the `python3-tk` package)
 - Additional Python dependencies are listed in `requirements.txt`
-  (including `ttkbootstrap` for optional modern themes)
+  (`tkcalendar` for calendar pop-ups and `ttkbootstrap` for optional
+  modern themes)
 
 ## Installation
 1. Clone or download the repository to your local machine.
 2. Ensure you have Python installed on your system.
 3. Install the required Python packages with `pip install -r requirements.txt`.
+   This installs the optional `tkcalendar` and `ttkbootstrap` packages
+   for calendar pop-ups and additional themes.
 4. Run `Start.bat` on Windows or `./Start.sh` on Linux/macOS to start the application.
    If you haven't used the shell script before, give it execute permission with `chmod +x Start.sh`.
 
@@ -50,6 +53,10 @@ The task list uses colors to highlight different states and priorities:
    search by name, hide completed tasks, show only tasks due before or after a
    specific date, and display tasks with priority above or below a chosen
    threshold. Click "Apply Filter" to update the list.
+7. **Changing Themes**: Open the "View" menu and select a theme. When
+   `ttkbootstrap` is installed, additional modern themes become available.
+8. **Import/Export**: Use the "File" menu to export tasks to CSV or ICS or to
+   import tasks from existing CSV/ICS files.
 
 ## File Structure
 - `orga.py`: Main entry point of the application.
