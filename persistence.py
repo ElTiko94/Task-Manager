@@ -29,7 +29,6 @@ def load_tasks_from_json(path):
         return Task.from_dict(data)
     except (FileNotFoundError, json.JSONDecodeError, OSError, TypeError) as err:
         logger.warning("Failed to load tasks from %s: %s", path, err)
-        logger.warning("Warning: %s", err)
         return Task("Main")
 
 
@@ -160,7 +159,6 @@ def load_tasks_from_csv(path):
             return root if root is not None else Task("Main")
     except Exception as err:
         logger.warning("Failed to load tasks from %s: %s", path, err)
-        logger.warning("Warning: %s", err)
         return Task("Main")
 
 
@@ -208,5 +206,4 @@ def load_tasks_from_ics(path):
         return root
     except Exception as err:
         logger.warning("Failed to load tasks from %s: %s", path, err)
-        logger.warning("Warning: %s", err)
         return Task("Main")
