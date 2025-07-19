@@ -1,4 +1,5 @@
 import os, sys
+import logging
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import json
 import builtins
@@ -37,15 +38,15 @@ def test_on_closing_saves_and_loads(tmp_path, monkeypatch):
     assert loaded_sub.completed
 
 
-def test_load_tasks_with_corrupt_json(tmp_path, monkeypatch, capsys):
+def test_load_tasks_with_corrupt_json(tmp_path, monkeypatch, caplog):
     bad_file = tmp_path / 'tasks.json'
     bad_file.write_text('not json', encoding='utf-8')
 
-    task = load_tasks(bad_file)
+    with caplog.at_level(logging.WARNING):
+        task = load_tasks(bad_file)
     assert isinstance(task, Task)
     assert task.name == 'Main'
-    captured = capsys.readouterr()
-    assert 'Warning:' in captured.out
+    assert any('Warning:' in rec.getMessage() for rec in caplog.records)
 
 
 def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
