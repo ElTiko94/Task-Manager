@@ -72,3 +72,16 @@ def test_load_without_name_field(tmp_path):
     assert isinstance(task, Task)
     assert task.name == 'Unnamed'
 
+
+def test_load_tasks_with_json_array(tmp_path, caplog):
+    """A JSON array should be treated as invalid input."""
+    path = tmp_path / 'array.json'
+    path.write_text('[1, 2, 3]', encoding='utf-8')
+
+    with caplog.at_level(logging.WARNING):
+        task = load_tasks_from_json(path)
+
+    assert isinstance(task, Task)
+    assert task.name == 'Main'
+    assert any('Invalid JSON structure' in rec.getMessage() for rec in caplog.records)
+

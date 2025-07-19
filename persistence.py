@@ -23,6 +23,9 @@ def load_tasks_from_json(path):
     try:
         with open(path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
+        if not isinstance(data, dict):
+            logger.warning("Invalid JSON structure in %s: expected mapping", path)
+            return Task("Main")
         return Task.from_dict(data)
     except (FileNotFoundError, json.JSONDecodeError, OSError, TypeError) as err:
         logger.warning("Failed to load tasks from %s: %s", path, err)
