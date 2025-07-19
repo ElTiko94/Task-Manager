@@ -182,25 +182,31 @@ class Window:
             except Exception:
                 pass
 
-        # Configure ttk theme for a more modern look
-        if BootstrapStyle is not None:
+        # Configure ttk theme for a more modern look.  Only attempt to use
+        # ttkbootstrap when a real ``tk.Tk`` instance is supplied; otherwise the
+        # themed style may try to create its own root window which breaks unit
+        # tests that pass in dummy objects.
+        bootstrap_ok = (
+            BootstrapStyle is not None and isinstance(self.root, tk.Tk)
+        )
+
+        if bootstrap_ok:
             try:
                 try:
                     self.style = BootstrapStyle(master=self.root)
                 except TypeError:
-                    # Older ttkbootstrap versions do not accept ``master``
+
+                    # Older ttkbootstrap versions do not accept ``master``.  Do
+                    # not replace the provided root unless one wasn't supplied
+                    # at all.
                     self.style = BootstrapStyle()
-                    if hasattr(self.style, "master"):
+                    if hasattr(self.style, "master") and root is None:
                         self.root = self.style.master
                 self.style.theme_use(theme)
             except Exception:
-                # Fallback to regular ttk in case of errors. If the selected
-                # theme was the bootstrap default, revert to the default ttk
-                # theme; otherwise preserve the parent's choice.
+                # Fallback to regular ttk in case of errors
                 fallback_mod = ttk if ttk is not ttkb else _ttk
                 self.style = fallback_mod.Style(self.root)
-                if theme == "flatly":
-                    theme = "clam"
                 try:
                     self.style.theme_use(theme)
                 except Exception:
@@ -297,10 +303,26 @@ class Window:
         self.scrollbar.grid(row=2, column=3, sticky="ns")
         self.tree.configure(yscrollcommand=self.scrollbar.set)
 
+        # Context menu for tree items
+        if hasattr(tk, "Menu"):
+            self.tree_menu = tk.Menu(self.root, tearoff=0)
+            self.tree_menu.add_command(label="Edit", command=self.edit_task)
+            self.tree_menu.add_command(label="Delete", command=self.delete_task)
+            self.tree_menu.add_command(
+                label="Toggle Complete", command=self.toggle_completion
+            )
+            self.tree_menu.add_separator()
+            self.tree_menu.add_command(
+                label="Move Up", command=lambda: self.move_selected_task(-1)
+            )
+            self.tree_menu.add_command(
+                label="Move Down", command=lambda: self.move_selected_task(1)
+            )
+
         # Bind double-click on a task to open its subtasks
         self.tree.bind("<Double-Button-1>", lambda e: self.view_subtasks())
-        # Bind right-click to toggle completion status
-        self.tree.bind("<Button-3>", lambda e: self.toggle_completion())
+        # Bind right-click to show the context menu
+        self.tree.bind("<Button-3>", self._show_tree_menu)
 
         btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
         view_subtasks_btn = ttk.Button(
@@ -738,6 +760,51 @@ class Window:
         self.refresh_window()
         if self.parent_window is not None:
             self.parent_window.refresh_window()
+
+    def move_selected_task(self, offset):
+        """Move the selected task up or down by ``offset`` positions."""
+        sel = self.tree.selection()
+        if not sel:
+            return
+
+        item = sel[0]
+        task, parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+
+        if parent is None:
+            lst = self.controller.get_sub_tasks()
+            idx = lst.index(task)
+            new_idx = idx + offset
+            if new_idx < 0 or new_idx >= len(lst):
+                return
+            self.controller.move_task(idx, new_idx)
+        else:
+            lst = parent.get_sub_tasks()
+            idx = lst.index(task)
+            new_idx = idx + offset
+            if new_idx < 0 or new_idx >= len(lst):
+                return
+            lst.pop(idx)
+            lst.insert(new_idx, task)
+
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def _show_tree_menu(self, event):
+        """Display the context menu at the pointer position."""
+        iid = self.tree.identify_row(event.y)
+        if iid:
+            try:
+                self.tree.selection_set(iid)
+            except Exception:
+                pass
+            if hasattr(self, "tree_menu"):
+                try:
+                    self.tree_menu.tk_popup(event.x_root, event.y_root)
+                finally:
+                    self.tree_menu.grab_release()
 
     # --- Undo/Redo ------------------------------------------------------
 
