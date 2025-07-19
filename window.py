@@ -186,6 +186,8 @@ class Window:
                     self.style.theme_use(theme)
                 except Exception:
                     pass
+                # Bootstrap is effectively unavailable if initialization fails
+                globals()["USE_BOOTSTRAP"] = False
         else:
             self.style = ttk.Style(self.root)
             try:
