@@ -43,13 +43,24 @@ try:
     # succeeds.
     if _TkCalendar is not None and not hasattr(_TkCalendar, "_bootstrap_patch"):
         _orig_init = _TkCalendar.__init__
+        _orig_setitem = _TkCalendar.__setitem__
 
         def _patched_init(self, *args, **kwargs):
             if not hasattr(self, "_properties"):
                 self._properties = {}
             _orig_init(self, *args, **kwargs)
 
+        def _patched_setitem(self, key, value):
+            try:
+                _orig_setitem(self, key, value)
+            except AttributeError:
+                if key == "style":
+                    self._properties[key] = value
+                else:
+                    raise
+
         _TkCalendar.__init__ = _patched_init
+        _TkCalendar.__setitem__ = _patched_setitem
         _TkCalendar._bootstrap_patch = True
 except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
 
