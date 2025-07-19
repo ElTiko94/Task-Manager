@@ -725,12 +725,12 @@ def test_view_menu_themes(monkeypatch):
         if label == "View":
             view_menu = menu
     assert view_menu is not None
-    assert [lbl for lbl, _ in view_menu.commands] == ["light", "dark"]
+    assert [lbl for lbl, _ in view_menu.commands] == ["clam", "light", "dark"]
 
     called = {}
     monkeypatch.setattr(win, "use_theme", lambda t: called.setdefault("theme", t))
-    # trigger second theme command
-    view_menu.commands[1][1]()
+    # trigger third menu command ("dark" theme)
+    view_menu.commands[2][1]()
     assert called.get("theme") == "dark"
 
 
