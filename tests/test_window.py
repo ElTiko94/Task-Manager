@@ -725,7 +725,8 @@ def test_view_menu_themes(monkeypatch):
         if label == "View":
             view_menu = menu
     assert view_menu is not None
-    assert [lbl for lbl, _ in view_menu.commands] == ["clam", "light", "dark"]
+    expected_default = "flatly" if window.USE_BOOTSTRAP else "clam"
+    assert [lbl for lbl, _ in view_menu.commands] == [expected_default, "light", "dark"]
 
     called = {}
     monkeypatch.setattr(win, "use_theme", lambda t: called.setdefault("theme", t))
