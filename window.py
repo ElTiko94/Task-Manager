@@ -22,6 +22,22 @@ except Exception:  # Library not installed or failed to load
     ttkb = None
 else:
     ttk = ttkb
+    # Provide compatibility shims for older versions of ``ttkbootstrap``
+    # that do not implement tkcalendar-specific style builders.  The
+    # application does not rely on these styles being present, so missing
+    # methods can safely be replaced with no-op implementations to avoid
+    # ``AttributeError`` during widget creation when tkcalendar attempts to
+    # use them.
+    try:
+        builder = ttkb.style.StyleBuilderTTK
+    except Exception:
+        builder = None
+    if builder is not None and not hasattr(builder, "create_date_frame_style"):
+        def _ignore(self, style, **kw):
+            if hasattr(self, "style"):
+                self.style.configure(style, **kw)
+
+        builder.create_date_frame_style = _ignore
 
 # Convenience flag used throughout the class to enable ttkbootstrap enhancements
 USE_BOOTSTRAP = BootstrapStyle is not None
