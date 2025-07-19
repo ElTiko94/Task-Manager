@@ -1,9 +1,10 @@
-import os, sys
+from helpers import load_module
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from task import Task
-from controller import TaskController
-import window
+task = load_module("task")
+controller_mod = load_module("controller")
+window = load_module("window")
+Task = task.Task
+TaskController = controller_mod.TaskController
 import datetime
 
 
@@ -503,6 +504,31 @@ def test_sort_by_due_date(monkeypatch):
     assert [item.split()[0] for item in win.tree.items] == ["Sooner", "Later", "NoDue"]
 
 
+def test_move_selected_up(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("A")
+    win.controller.add_task("B")
+    win.controller.add_task("C")
+    win.refresh_window()
+    iid = win.tree.get_children()[1]
+    win.tree.selection_set(iid)
+    win.move_selected_up()
+    assert [t.name for t in win.controller.get_sub_tasks()] == ["B", "A", "C"]
+    assert [item.split()[0] for item in win.tree.items] == ["B", "A", "C"]
+
+
+def test_move_selected_down(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("A")
+    win.controller.add_task("B")
+    win.refresh_window()
+    iid = win.tree.get_children()[0]
+    win.tree.selection_set(iid)
+    win.move_selected_down()
+    assert [t.name for t in win.controller.get_sub_tasks()] == ["B", "A"]
+    assert [item.split()[0] for item in win.tree.items] == ["B", "A"]
+
+
 def test_search_filter(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task("Hello")
@@ -521,6 +547,16 @@ def test_hide_completed(monkeypatch):
     win.hide_completed_var.set(1)
     win.refresh_window()
     assert [item.split()[0] for item in win.tree.items] == ["Todo"]
+
+
+def test_show_completed_only(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("Done")
+    win.controller.add_task("Todo")
+    win.controller.mark_task_completed(0)
+    win.show_completed_only_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.tree.items] == ["Done"]
 
 
 def test_hide_checkbox_triggers_refresh(monkeypatch):
@@ -676,6 +712,16 @@ def test_due_date_filter_after(monkeypatch):
     win.due_after_var.set(1)
     win.refresh_window()
     assert [item.split()[0] for item in win.tree.items] == ["Later"]
+
+
+def test_due_date_filter_invalid_input(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("Soon", due_date="2024-01-01")
+    win.controller.add_task("Later", due_date="2026-01-01")
+    win.due_filter_var.set("invalid")
+    win.due_before_var.set(1)
+    win.refresh_window()
+    assert [item.split()[0] for item in win.tree.items] == ["Soon", "Later"]
 
 
 def test_priority_filter_above(monkeypatch):

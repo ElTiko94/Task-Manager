@@ -166,6 +166,8 @@ class Window:
         self.root = root
         self.task_list = controller.get_sub_tasks()
         self.controller = controller
+        # Expose current save path for convenience
+        self.file_path = controller.save_path
         self.parent_window = parent_window
         self.name = controller.get_task_name()
 
@@ -180,15 +182,24 @@ class Window:
             except Exception:
                 pass
 
-        # Configure ttk theme for a more modern look
-        if BootstrapStyle is not None:
+        # Configure ttk theme for a more modern look.  Only attempt to use
+        # ttkbootstrap when a real ``tk.Tk`` instance is supplied; otherwise the
+        # themed style may try to create its own root window which breaks unit
+        # tests that pass in dummy objects.
+        bootstrap_ok = (
+            BootstrapStyle is not None and isinstance(self.root, tk.Tk)
+        )
+
+        if bootstrap_ok:
             try:
                 try:
                     self.style = BootstrapStyle(master=self.root)
                 except TypeError:
-                    # Older ttkbootstrap versions do not accept ``master``
+                    # Older ttkbootstrap versions do not accept ``master``.  Do
+                    # not replace the provided root unless one wasn't supplied
+                    # at all.
                     self.style = BootstrapStyle()
-                    if hasattr(self.style, "master"):
+                    if hasattr(self.style, "master") and root is None:
                         self.root = self.style.master
                 self.style.theme_use(theme)
             except Exception:
@@ -331,9 +342,27 @@ class Window:
         )
         dlt_btn.grid(row=3, column=2, sticky="ew", padx=2)
 
+        btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
+        up_btn = ttk.Button(
+            self.main_frame,
+            text="Move Up",
+            command=self.move_selected_up,
+            **btn_opts,
+        )
+        up_btn.grid(row=3, column=3, sticky="ew", padx=2)
+
+        down_btn = ttk.Button(
+            self.main_frame,
+            text="Move Down",
+            command=self.move_selected_down,
+            **btn_opts,
+        )
+        down_btn.grid(row=3, column=4, sticky="ew", padx=2)
+
         # --- Filtering widgets ---
         self.search_var = tk.StringVar()
         self.hide_completed_var = tk.IntVar()
+        self.show_completed_only_var = tk.IntVar()
 
         search_entry = ttk.Entry(self.main_frame, textvariable=self.search_var)
         search_entry.grid(row=4, column=0, sticky="ew", padx=2)
@@ -346,6 +375,14 @@ class Window:
         )
         hide_check.grid(row=4, column=1, sticky="ew", padx=2)
 
+        show_only_check = tk.Checkbutton(
+            self.main_frame,
+            text="Show completed only",
+            variable=self.show_completed_only_var,
+            command=self.refresh_window,
+        )
+        show_only_check.grid(row=4, column=2, sticky="ew", padx=2)
+
         btn_opts = {"bootstyle": "primary"} if USE_BOOTSTRAP else {}
         filter_btn = ttk.Button(
             self.main_frame,
@@ -353,7 +390,7 @@ class Window:
             command=self.refresh_window,
             **btn_opts,
         )
-        filter_btn.grid(row=4, column=2, sticky="ew", padx=2)
+        filter_btn.grid(row=4, column=3, sticky="ew", padx=2)
 
         # Additional filtering controls
         self.due_filter_var = tk.StringVar()
@@ -655,6 +692,56 @@ class Window:
         if self.parent_window is not None:
             self.parent_window.refresh_window()
 
+    def move_selected_up(self):
+        """Move the selected task up in the list."""
+        sel = self.tree.selection()
+        if not sel:
+            return
+        item = sel[0]
+        task, parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+        if parent is None:
+            lst = self.controller.get_sub_tasks()
+            idx = lst.index(task)
+            if idx == 0:
+                return
+            self.controller.move_task(idx, idx - 1)
+        else:
+            lst = parent.get_sub_tasks()
+            idx = lst.index(task)
+            if idx == 0:
+                return
+            lst.insert(idx - 1, lst.pop(idx))
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def move_selected_down(self):
+        """Move the selected task down in the list."""
+        sel = self.tree.selection()
+        if not sel:
+            return
+        item = sel[0]
+        task, parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+        if parent is None:
+            lst = self.controller.get_sub_tasks()
+            idx = lst.index(task)
+            if idx >= len(lst) - 1:
+                return
+            self.controller.move_task(idx, idx + 1)
+        else:
+            lst = parent.get_sub_tasks()
+            idx = lst.index(task)
+            if idx >= len(lst) - 1:
+                return
+            lst.insert(idx + 1, lst.pop(idx))
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
     def toggle_completion(self):
         """Toggle the completion state of the selected task."""
         sel = self.tree.selection()
@@ -846,6 +933,7 @@ class Window:
         task,
         search_term="",
         hide_completed=False,
+        show_completed_only=False,
         due_value="",
         before=False,
         after=False,
@@ -857,6 +945,9 @@ class Window:
         if not isinstance(task, Task):
             return False
 
+        if show_completed_only and not task.completed:
+            return False
+
         if hide_completed and task.completed:
             return False
 
@@ -866,6 +957,11 @@ class Window:
         if due_value and (before or after):
             try:
                 fdate = _datetime.date.fromisoformat(due_value)
+            except ValueError:
+                # Invalid user input - skip due date filtering entirely
+                return True
+
+            try:
                 tdate = (
                     _datetime.date.fromisoformat(str(task.due_date))
                     if getattr(task, "due_date", None)
@@ -929,6 +1025,7 @@ class Window:
         parent_task=None,
         search_term="",
         hide_completed=False,
+        show_completed_only=False,
         due_value="",
         before=False,
         after=False,
@@ -941,6 +1038,7 @@ class Window:
             task,
             search_term=search_term,
             hide_completed=hide_completed,
+            show_completed_only=show_completed_only,
             due_value=due_value,
             before=before,
             after=after,
@@ -962,6 +1060,7 @@ class Window:
                 task,
                 search_term,
                 hide_completed,
+                show_completed_only,
                 due_value,
                 before,
                 after,
@@ -999,6 +1098,11 @@ class Window:
             if hasattr(self, "hide_completed_var")
             else False
         )
+        show_completed_only = (
+            bool(self.show_completed_only_var.get())
+            if hasattr(self, "show_completed_only_var")
+            else False
+        )
         due_value = (
             self.due_filter_var.get().strip() if hasattr(self, "due_filter_var") else ""
         )
@@ -1033,6 +1137,7 @@ class Window:
                 None,
                 search_term=search_term,
                 hide_completed=hide_completed,
+                show_completed_only=show_completed_only,
                 due_value=due_value,
                 before=before,
                 after=after,

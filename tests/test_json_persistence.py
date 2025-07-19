@@ -1,9 +1,12 @@
-import os, sys
 import pytest
 import logging
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from task import Task
-from persistence import save_tasks_to_json, load_tasks_from_json
+from helpers import load_module
+
+task = load_module("task")
+persistence_mod = load_module("persistence")
+Task = task.Task
+save_tasks_to_json = persistence_mod.save_tasks_to_json
+load_tasks_from_json = persistence_mod.load_tasks_from_json
 
 
 def build_task_tree():

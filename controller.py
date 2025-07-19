@@ -8,7 +8,10 @@ Usage:
     This module provides the TaskController class for managing tasks in a to-do list.
     It can be used to add, edit, delete tasks, and retrieve task information.
 """
+from pathlib import Path
+
 from task import Task
+import persistence
 
 
 class InvalidTaskIndexError(IndexError):
@@ -32,14 +35,17 @@ class TaskController:
         sort_tasks_by_priority: Sort tasks by their priority value.
     """
 
-    def __init__(self, task):
+    def __init__(self, task, save_path=None):
         """
         Initializes a new TaskController object.
 
         Args:
             task (Task): The main task managed by the controller.
+            save_path (str or Path, optional): Path used for automatic JSON
+                persistence.  If ``None`` (default), auto-saving is disabled.
         """
         self.task = task
+        self.save_path = Path(save_path) if save_path is not None else None
         # Stacks used to store undo and redo operations.  Each entry is a
         # tuple describing the operation that should be executed when popped.
         #
@@ -50,6 +56,15 @@ class TaskController:
         #   ('move', from_idx, to_idx)  -> move task from ``from_idx`` to ``to_idx``
         self._undo_stack = []
         self._redo_stack = []
+
+    # ------------------------------------------------------------------
+    def _auto_save(self):
+        """Write current tasks to :pyattr:`save_path` if configured."""
+        if self.save_path is not None:
+            try:
+                persistence.save_tasks_to_json(self.task, self.save_path)
+            except Exception:
+                pass
 
     def add_task(self, task_name, due_date=None, priority=None):
         """
@@ -63,6 +78,7 @@ class TaskController:
         idx = len(self.task.sub_tasks) - 1
         self._undo_stack.append(("delete", idx, new_task))
         self._redo_stack.clear()
+        self._auto_save()
 
     def edit_task(self, task_index, new_name):
         """
@@ -79,6 +95,7 @@ class TaskController:
         sub_tasks[task_index].name = new_name
         self._undo_stack.append(("setattr", task_index, {"name": old_name}))
         self._redo_stack.clear()
+        self._auto_save()
 
     def delete_task(self, index):
         """
@@ -94,6 +111,21 @@ class TaskController:
         self.task.remove_sub_task(removed)
         self._undo_stack.append(("add", index, removed))
         self._redo_stack.clear()
+        self._auto_save()
+
+    def move_task(self, old_index, new_index):
+        """Move a task from ``old_index`` to ``new_index`` in the sub task list."""
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= old_index < len(sub_tasks):
+            raise InvalidTaskIndexError(old_index)
+        if not 0 <= new_index < len(sub_tasks):
+            raise InvalidTaskIndexError(new_index)
+        task = sub_tasks.pop(old_index)
+        # ``list.insert`` appends when index >= len, which handles moves to end
+        sub_tasks.insert(new_index, task)
+        # push inverse for undo
+        self._undo_stack.append(("move", new_index, old_index))
+        self._redo_stack.clear()
 
     def mark_task_completed(self, index):
         """Mark the task at the given index as completed."""
@@ -104,6 +136,7 @@ class TaskController:
         sub_tasks[index].mark_completed()
         self._undo_stack.append(("setattr", index, {"completed": prev}))
         self._redo_stack.clear()
+        self._auto_save()
 
     def mark_task_incomplete(self, index):
         """Mark the task at the given index as not completed."""
@@ -114,6 +147,7 @@ class TaskController:
         sub_tasks[index].mark_incomplete()
         self._undo_stack.append(("setattr", index, {"completed": prev}))
         self._redo_stack.clear()
+        self._auto_save()
 
     def set_task_due_date(self, index, due_date):
         """Set the due date for a task at the given index."""
@@ -124,6 +158,7 @@ class TaskController:
         sub_tasks[index].set_due_date(due_date)
         self._undo_stack.append(("setattr", index, {"due_date": prev}))
         self._redo_stack.clear()
+        self._auto_save()
 
     def set_task_priority(self, index, priority):
         """Set the priority for a task at the given index."""
@@ -134,6 +169,7 @@ class TaskController:
         sub_tasks[index].set_priority(priority)
         self._undo_stack.append(("setattr", index, {"priority": prev}))
         self._redo_stack.clear()
+        self._auto_save()
 
     def move_task(self, from_index, to_index):
         """Move a task from ``from_index`` to ``to_index``.
@@ -173,10 +209,12 @@ class TaskController:
     def sort_tasks_by_priority(self):
         """Sort the controller's sub tasks by priority (None values last)."""
         self.task.sub_tasks.sort(key=lambda t: (t.priority is None, t.priority))
+        self._auto_save()
 
     def sort_tasks_by_due_date(self):
         """Sort the controller's sub tasks by due date (None values last)."""
         self.task.sub_tasks.sort(key=lambda t: (t.due_date is None, t.due_date))
+        self._auto_save()
 
     # --- Undo/Redo support -------------------------------------------------
 
@@ -222,6 +260,7 @@ class TaskController:
         inverse = self._apply_operation(op)
         if inverse:
             self._redo_stack.append(inverse)
+        self._auto_save()
 
     def redo(self):
         """Redo the most recently undone operation, if any."""
@@ -231,3 +270,4 @@ class TaskController:
         inverse = self._apply_operation(op)
         if inverse:
             self._undo_stack.append(inverse)
+        self._auto_save()

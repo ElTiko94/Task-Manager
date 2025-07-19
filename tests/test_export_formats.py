@@ -1,14 +1,13 @@
-import os, sys
 import csv
+from helpers import load_module
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from task import Task
-from persistence import (
-    save_tasks_to_csv,
-    save_tasks_to_ics,
-    load_tasks_from_csv,
-    load_tasks_from_ics,
-)
+task = load_module("task")
+persistence_mod = load_module("persistence")
+Task = task.Task
+save_tasks_to_csv = persistence_mod.save_tasks_to_csv
+save_tasks_to_ics = persistence_mod.save_tasks_to_ics
+load_tasks_from_csv = persistence_mod.load_tasks_from_csv
+load_tasks_from_ics = persistence_mod.load_tasks_from_ics
 
 
 def build_task_tree():
