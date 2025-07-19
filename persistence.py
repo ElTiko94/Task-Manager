@@ -30,25 +30,26 @@ def load_tasks_from_json(path):
         return Task("Main")
 
 
-def _iterate_tasks(task):
-    """Yield ``task`` and all of its subtasks recursively."""
-    yield task
+def _iterate_tasks(task, depth=0):
+    """Yield ``(task, depth)`` for ``task`` and all of its subtasks recursively."""
+    yield task, depth
     for sub in task.get_sub_tasks():
-        yield from _iterate_tasks(sub)
+        yield from _iterate_tasks(sub, depth + 1)
 
 
 def save_tasks_to_csv(task, path):
     """Write the task hierarchy to ``path`` in CSV format."""
     with open(path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
-        writer.writerow(["Name", "Due Date", "Priority", "Completed"])
-        for t in _iterate_tasks(task):
+        writer.writerow(["Name", "Due Date", "Priority", "Completed", "Depth"])
+        for t, depth in _iterate_tasks(task):
             writer.writerow(
                 [
                     t.name,
                     t.due_date or "",
                     "" if t.priority is None else t.priority,
                     1 if t.completed else 0,
+                    depth,
                 ]
             )
 
@@ -59,7 +60,7 @@ def save_tasks_to_ics(task, path):
         fh.write("BEGIN:VCALENDAR\n")
         fh.write("VERSION:2.0\n")
         fh.write("PRODID:-//Task Manager//EN\n")
-        for t in _iterate_tasks(task):
+        for t, _ in _iterate_tasks(task):
             fh.write("BEGIN:VTODO\n")
             fh.write(f"SUMMARY:{t.name}\n")
             if t.due_date:
@@ -86,22 +87,56 @@ def load_tasks_from_csv(path):
             rows = list(reader)
         if not rows:
             return Task("Main")
-        root_row = rows[0]
-        name, due, prio, completed = root_row[:4]
-        priority = int(prio) if prio else None
-        completed = bool(int(completed)) if completed else False
-        root = Task(name, due_date=due or None, priority=priority, completed=completed)
-        for row in rows[1:]:
+
+        if header and "Depth" in header:
+            depth_index = header.index("Depth")
+        else:
+            depth_index = None
+
+        if depth_index is None:
+            # Legacy format without depth information
+            root_row = rows[0]
+            name, due, prio, completed = root_row[:4]
+            priority = int(prio) if prio else None
+            completed = bool(int(completed)) if completed else False
+            root = Task(name, due_date=due or None, priority=priority, completed=completed)
+            for row in rows[1:]:
+                try:
+                    r_name, r_due, r_prio, r_comp = row[:4]
+                except ValueError:
+                    continue
+                r_priority = int(r_prio) if r_prio else None
+                r_completed = bool(int(r_comp)) if r_comp else False
+                root.add_sub_task(
+                    Task(r_name, due_date=r_due or None, priority=r_priority, completed=r_completed)
+                )
+            return root
+
+        stack = []
+        root = None
+        for row in rows:
             try:
-                r_name, r_due, r_prio, r_comp = row[:4]
-            except ValueError:
+                name, due, prio, comp = row[:4]
+                depth = int(row[depth_index]) if len(row) > depth_index and row[depth_index] != "" else 0
+            except (ValueError, IndexError):
                 continue
-            r_priority = int(r_prio) if r_prio else None
-            r_completed = bool(int(r_comp)) if r_comp else False
-            root.add_sub_task(
-                Task(r_name, due_date=r_due or None, priority=r_priority, completed=r_completed)
-            )
-        return root
+            priority = int(prio) if prio else None
+            completed = bool(int(comp)) if comp else False
+            task = Task(name, due_date=due or None, priority=priority, completed=completed)
+            if depth == 0:
+                root = task
+                stack = [task]
+                continue
+            while len(stack) > depth:
+                stack.pop()
+            parent = stack[-1] if stack else None
+            if parent is None:
+                root = task
+                stack = [task]
+            else:
+                parent.add_sub_task(task)
+                stack.append(task)
+        return root if root is not None else Task("Main")
     except Exception as err:
         logger.warning("Failed to load tasks from %s: %s", path, err)
         logger.warning("Warning: %s", err)
