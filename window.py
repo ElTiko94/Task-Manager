@@ -182,15 +182,24 @@ class Window:
             except Exception:
                 pass
 
-        # Configure ttk theme for a more modern look
-        if BootstrapStyle is not None:
+        # Configure ttk theme for a more modern look.  Only attempt to use
+        # ttkbootstrap when a real ``tk.Tk`` instance is supplied; otherwise the
+        # themed style may try to create its own root window which breaks unit
+        # tests that pass in dummy objects.
+        bootstrap_ok = (
+            BootstrapStyle is not None and isinstance(self.root, tk.Tk)
+        )
+
+        if bootstrap_ok:
             try:
                 try:
                     self.style = BootstrapStyle(master=self.root)
                 except TypeError:
-                    # Older ttkbootstrap versions do not accept ``master``
+                    # Older ttkbootstrap versions do not accept ``master``.  Do
+                    # not replace the provided root unless one wasn't supplied
+                    # at all.
                     self.style = BootstrapStyle()
-                    if hasattr(self.style, "master"):
+                    if hasattr(self.style, "master") and root is None:
                         self.root = self.style.master
                 self.style.theme_use(theme)
             except Exception:
