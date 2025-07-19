@@ -315,6 +315,23 @@ class Window:
         )
         dlt_btn.grid(row=3, column=2, sticky="ew", padx=2)
 
+        btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
+        up_btn = ttk.Button(
+            self.main_frame,
+            text="Move Up",
+            command=self.move_selected_up,
+            **btn_opts,
+        )
+        up_btn.grid(row=3, column=3, sticky="ew", padx=2)
+
+        down_btn = ttk.Button(
+            self.main_frame,
+            text="Move Down",
+            command=self.move_selected_down,
+            **btn_opts,
+        )
+        down_btn.grid(row=3, column=4, sticky="ew", padx=2)
+
         # --- Filtering widgets ---
         self.search_var = tk.StringVar()
         self.hide_completed_var = tk.IntVar()
@@ -635,6 +652,56 @@ class Window:
     def sort_tasks_by_due_date(self):
         """Sort tasks by due date using the controller and refresh the view."""
         self.controller.sort_tasks_by_due_date()
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def move_selected_up(self):
+        """Move the selected task up in the list."""
+        sel = self.tree.selection()
+        if not sel:
+            return
+        item = sel[0]
+        task, parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+        if parent is None:
+            lst = self.controller.get_sub_tasks()
+            idx = lst.index(task)
+            if idx == 0:
+                return
+            self.controller.move_task(idx, idx - 1)
+        else:
+            lst = parent.get_sub_tasks()
+            idx = lst.index(task)
+            if idx == 0:
+                return
+            lst.insert(idx - 1, lst.pop(idx))
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def move_selected_down(self):
+        """Move the selected task down in the list."""
+        sel = self.tree.selection()
+        if not sel:
+            return
+        item = sel[0]
+        task, parent = self.tree_items.get(item, (None, None))
+        if task is None:
+            return
+        if parent is None:
+            lst = self.controller.get_sub_tasks()
+            idx = lst.index(task)
+            if idx >= len(lst) - 1:
+                return
+            self.controller.move_task(idx, idx + 1)
+        else:
+            lst = parent.get_sub_tasks()
+            idx = lst.index(task)
+            if idx >= len(lst) - 1:
+                return
+            lst.insert(idx + 1, lst.pop(idx))
         self.refresh_window()
         if self.parent_window is not None:
             self.parent_window.refresh_window()

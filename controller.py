@@ -94,6 +94,20 @@ class TaskController:
         self._undo_stack.append(("add", index, removed))
         self._redo_stack.clear()
 
+    def move_task(self, old_index, new_index):
+        """Move a task from ``old_index`` to ``new_index`` in the sub task list."""
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= old_index < len(sub_tasks):
+            raise InvalidTaskIndexError(old_index)
+        if not 0 <= new_index < len(sub_tasks):
+            raise InvalidTaskIndexError(new_index)
+        task = sub_tasks.pop(old_index)
+        # ``list.insert`` appends when index >= len, which handles moves to end
+        sub_tasks.insert(new_index, task)
+        # push inverse for undo
+        self._undo_stack.append(("move", new_index, old_index))
+        self._redo_stack.clear()
+
     def mark_task_completed(self, index):
         """Mark the task at the given index as completed."""
         sub_tasks = self.get_sub_tasks()
@@ -184,6 +198,16 @@ class TaskController:
                 prev[attr] = getattr(task, attr)
                 setattr(task, attr, val)
             return ("setattr", index, prev)
+        if op_type == "move":
+            old_i, new_i = operation[1], operation[2]
+            sub_tasks = self.get_sub_tasks()
+            if not 0 <= old_i < len(sub_tasks):
+                raise InvalidTaskIndexError(old_i)
+            if not 0 <= new_i < len(sub_tasks):
+                raise InvalidTaskIndexError(new_i)
+            task = sub_tasks.pop(old_i)
+            sub_tasks.insert(new_i, task)
+            return ("move", new_i, old_i)
         return None
 
     def undo(self):
