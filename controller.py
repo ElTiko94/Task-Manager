@@ -53,6 +53,7 @@ class TaskController:
         #   ('add', index, task)        -> insert ``task`` at ``index``
         #   ('delete', index, task)     -> remove task at ``index``
         #   ('setattr', index, values)  -> set attributes on task ``index``
+        #   ('move', from_idx, to_idx)  -> move task from ``from_idx`` to ``to_idx``
         self._undo_stack = []
         self._redo_stack = []
 
@@ -170,6 +171,23 @@ class TaskController:
         self._redo_stack.clear()
         self._auto_save()
 
+    def move_task(self, from_index, to_index):
+        """Move a task from ``from_index`` to ``to_index``.
+
+        ``to_index`` may be equal to ``len(sub_tasks)`` to move the item to the
+        end of the list.  ``InvalidTaskIndexError`` is raised if either index is
+        out of range.
+        """
+        sub_tasks = self.get_sub_tasks()
+        if not 0 <= from_index < len(sub_tasks):
+            raise InvalidTaskIndexError(from_index)
+        if not 0 <= to_index <= len(sub_tasks):
+            raise InvalidTaskIndexError(to_index)
+        task = sub_tasks.pop(from_index)
+        sub_tasks.insert(to_index, task)
+        self._undo_stack.append(("move", to_index, from_index))
+        self._redo_stack.clear()
+
     def get_task_name(self):
         """
         Returns the name of the task.
@@ -223,15 +241,15 @@ class TaskController:
                 setattr(task, attr, val)
             return ("setattr", index, prev)
         if op_type == "move":
-            old_i, new_i = operation[1], operation[2]
+            from_idx, to_idx = operation[1], operation[2]
             sub_tasks = self.get_sub_tasks()
-            if not 0 <= old_i < len(sub_tasks):
-                raise InvalidTaskIndexError(old_i)
-            if not 0 <= new_i < len(sub_tasks):
-                raise InvalidTaskIndexError(new_i)
-            task = sub_tasks.pop(old_i)
-            sub_tasks.insert(new_i, task)
-            return ("move", new_i, old_i)
+            if not 0 <= from_idx < len(sub_tasks):
+                raise InvalidTaskIndexError(from_idx)
+            if not 0 <= to_idx <= len(sub_tasks):
+                raise InvalidTaskIndexError(to_idx)
+            task = sub_tasks.pop(from_idx)
+            sub_tasks.insert(to_idx, task)
+            return ("move", to_idx, from_idx)
         return None
 
     def undo(self):

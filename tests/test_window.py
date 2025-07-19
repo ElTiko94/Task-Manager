@@ -122,6 +122,10 @@ class DummyTreeview(DummyWidget):
         else:
             self._selection = (iid,)
 
+    def identify_row(self, y):
+        # Return the first item for simplicity
+        return self.get_children()[0] if self.nodes else ""
+
     def bind(self, event, func):
         self.bindings[event] = func
 
@@ -219,6 +223,12 @@ class DummyMenu:
 
     def add_cascade(self, label=None, menu=None):
         self.cascades.append((label, menu))
+
+    def add_separator(self):
+        self.commands.append(("separator", None))
+
+    def tk_popup(self, x, y):
+        self.popup_at = (x, y)
 
 
 class DummyRootWithConfig(DummyRoot):
@@ -597,20 +607,24 @@ def test_double_click_opens_subtasks(monkeypatch):
     assert called.get("view")
 
 
-def test_right_click_calls_toggle(monkeypatch):
+def test_right_click_calls_menu(monkeypatch):
     called = {}
 
-    def fake_toggle(self):
-        called["toggle"] = True
+    def fake_menu(self, event=None):
+        called["menu"] = True
 
-    monkeypatch.setattr(window.Window, "toggle_completion", fake_toggle)
+    monkeypatch.setattr(window.Window, "_show_tree_menu", fake_menu)
     win = setup_window(monkeypatch)
     win.controller.add_task("A")
     win.refresh_window()
     bound = win.tree.bindings.get("<Button-3>")
     assert bound is not None
-    bound(None)
-    assert called.get("toggle")
+    class E:
+        x_root = 0
+        y_root = 0
+        y = 0
+    bound(E())
+    assert called.get("menu")
 
 
 def test_toggle_completion(monkeypatch):
@@ -853,3 +867,15 @@ def test_refresh_preserves_tree_expansion(monkeypatch):
     win.refresh_window()
     parent_id = win.tree.get_children()[0]
     assert win.tree.item(parent_id, "open") is True
+
+
+def test_move_selected_task(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("A")
+    win.controller.add_task("B")
+    win.refresh_window()
+    items = win.tree.get_children()
+    win.tree.selection_set(items[1])
+    win.move_selected_task(-1)
+    assert [t.name for t in win.controller.get_sub_tasks()] == ["B", "A"]
+    assert [win.tree.nodes[i]["text"].split()[0] for i in win.tree.get_children()] == ["B", "A"]

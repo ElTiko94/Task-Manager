@@ -72,6 +72,12 @@ def test_invalid_index_operations():
         c.delete_task(2)
     with pytest.raises(InvalidTaskIndexError):
         c.mark_task_completed(-1)
+    # moving with an invalid from_index
+    with pytest.raises(InvalidTaskIndexError):
+        c.move_task(1, 0)
+    # moving with an invalid to_index
+    with pytest.raises(InvalidTaskIndexError):
+        c.move_task(0, 2)
 
 
 def test_undo_and_redo_add():
@@ -93,14 +99,18 @@ def test_undo_and_redo_edit():
     assert c.get_sub_tasks()[0].name == 'B'
 
 
-def test_move_task_changes_order():
+def test_move_task_and_undo_redo():
+
     c = create_controller()
     c.add_task('A')
     c.add_task('B')
     c.add_task('C')
     c.move_task(0, 2)
     assert [t.name for t in c.get_sub_tasks()] == ['B', 'C', 'A']
-
+    c.undo()
+    assert [t.name for t in c.get_sub_tasks()] == ['A', 'B', 'C']
+    c.redo()
+    assert [t.name for t in c.get_sub_tasks()] == ['B', 'C', 'A']
 
 def test_undo_redo_move(monkeypatch=None):
     c = create_controller()
