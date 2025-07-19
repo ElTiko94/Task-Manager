@@ -46,7 +46,7 @@ def test_load_tasks_with_corrupt_json(tmp_path, monkeypatch, caplog):
         task = load_tasks(bad_file)
     assert isinstance(task, Task)
     assert task.name == 'Main'
-    assert any('Warning:' in rec.getMessage() for rec in caplog.records)
+    assert any('Failed to load tasks' in rec.getMessage() for rec in caplog.records)
 
 
 def test_on_closing_no_prompt_when_unmodified(tmp_path, monkeypatch):
