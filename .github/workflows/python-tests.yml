@@ -2,12 +2,10 @@ name: Python package
 
 on:
   push:
-    paths: ['**.py', 'tests/**', '.github/workflows/python-tests.yml', 'requirements.txt']
   pull_request:
-    paths: ['**.py', 'tests/**', '.github/workflows/python-tests.yml', 'requirements.txt']
 
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
