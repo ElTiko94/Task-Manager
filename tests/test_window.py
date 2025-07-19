@@ -1,9 +1,10 @@
-import os, sys
+from helpers import load_module
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from task import Task
-from controller import TaskController
-import window
+task = load_module("task")
+controller_mod = load_module("controller")
+window = load_module("window")
+Task = task.Task
+TaskController = controller_mod.TaskController
 import datetime
 
 
