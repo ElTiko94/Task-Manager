@@ -32,6 +32,25 @@ import datetime as _datetime
 
 try:
     from tkcalendar import DateEntry as _CalendarDateEntry
+    from tkcalendar.calendar_ import Calendar as _TkCalendar
+
+    # Work around a bug triggered when tkcalendar is used together with
+    # ``ttkbootstrap``.  ``ttkbootstrap`` applies widget configuration very
+    # early during ``Calendar`` initialisation which may happen before the
+    # ``_properties`` attribute is created by tkcalendar.  Accessing the
+    # attribute too early raises ``AttributeError``.  Ensure the attribute is
+    # present before the original ``__init__`` runs so the configure call
+    # succeeds.
+    if _TkCalendar is not None and not hasattr(_TkCalendar, "_bootstrap_patch"):
+        _orig_init = _TkCalendar.__init__
+
+        def _patched_init(self, *args, **kwargs):
+            if not hasattr(self, "_properties"):
+                self._properties = {}
+            _orig_init(self, *args, **kwargs)
+
+        _TkCalendar.__init__ = _patched_init
+        _TkCalendar._bootstrap_patch = True
 except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
 
     class _SimpleCalendar(ttk.Frame):
