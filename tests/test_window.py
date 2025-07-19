@@ -936,3 +936,35 @@ def test_toggle_completion_autosave(monkeypatch, tmp_path):
 
     assert called.get('task') is controller.task
     assert called.get('path') == path
+
+
+def test_drag_drop_bindings(monkeypatch):
+    win = setup_window(monkeypatch)
+    assert "<ButtonPress-1>" in win.tree.bindings
+    assert "<ButtonRelease-1>" in win.tree.bindings
+
+
+def test_drag_and_drop_reorders(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("A")
+    win.controller.add_task("B")
+    win.refresh_window()
+
+    items = win.tree.get_children()
+    start_iid, dest_iid = items[1], items[0]
+
+    ids = [start_iid, dest_iid]
+
+    def fake_identify(y):
+        return ids.pop(0)
+
+    monkeypatch.setattr(win.tree, "identify_row", fake_identify)
+
+    class E:
+        y = 0
+
+    win._start_drag(E())
+    win._end_drag(E())
+
+    assert [t.name for t in win.controller.get_sub_tasks()] == ["B", "A"]
+    assert [win.tree.nodes[i]["text"].split()[0] for i in win.tree.get_children()] == ["B", "A"]

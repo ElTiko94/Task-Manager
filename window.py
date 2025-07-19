@@ -332,6 +332,9 @@ class Window:
         self.tree.bind("<Double-Button-1>", lambda e: self.view_subtasks())
         # Bind right-click to show the context menu
         self.tree.bind("<Button-3>", self._show_tree_menu)
+        # Enable drag and drop reordering
+        self.tree.bind("<ButtonPress-1>", self._start_drag)
+        self.tree.bind("<ButtonRelease-1>", self._end_drag)
 
         btn_opts = {"bootstyle": "secondary"} if USE_BOOTSTRAP else {}
         view_subtasks_btn = ttk.Button(
@@ -826,6 +829,55 @@ class Window:
                 return
             lst.pop(idx)
             lst.insert(new_idx, task)
+
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    # --- Drag and Drop -------------------------------------------------
+
+    def _start_drag(self, event):
+        """Record the item being dragged."""
+        iid = self.tree.identify_row(event.y)
+        if iid:
+            self._drag_start_iid = iid
+            try:
+                self.tree.selection_set(iid)
+            except Exception:
+                pass
+
+    def _end_drag(self, event):
+        """Reorder items when the drag operation ends."""
+        start_iid = getattr(self, "_drag_start_iid", None)
+        if not start_iid:
+            return
+        self._drag_start_iid = None
+        dest_iid = self.tree.identify_row(event.y)
+        if not dest_iid or dest_iid == start_iid:
+            return
+
+        src_task, src_parent = self.tree_items.get(start_iid, (None, None))
+        dst_task, dst_parent = self.tree_items.get(dest_iid, (None, None))
+        if src_task is None or dst_task is None or src_parent is not dst_parent:
+            return
+
+        if src_parent is None:
+            lst = self.controller.get_sub_tasks()
+            src_idx = lst.index(src_task)
+            dst_idx = lst.index(dst_task)
+            if src_idx == dst_idx:
+                return
+            self.controller.move_task(src_idx, dst_idx)
+        else:
+            lst = src_parent.get_sub_tasks()
+            src_idx = lst.index(src_task)
+            dst_idx = lst.index(dst_task)
+            if src_idx == dst_idx:
+                return
+            lst.pop(src_idx)
+            if src_idx < dst_idx:
+                dst_idx -= 1
+            lst.insert(dst_idx, src_task)
 
         self.refresh_window()
         if self.parent_window is not None:
