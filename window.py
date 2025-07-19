@@ -181,6 +181,7 @@ class Window:
             except Exception:
                 # Fallback to regular ttk in case of errors
                 self.style = ttk.Style(self.root)
+                theme = "clam"
                 try:
                     self.style.theme_use(theme)
                 except Exception:
