@@ -11,10 +11,16 @@ Usage:
 import tkinter as tk
 import tkinter.ttk as ttk
 
+# Try to load ttkbootstrap for optional theming enhancements.  When available
+# we use its ``Style`` class and widget set so ``bootstyle`` keywords work.
 try:
     from ttkbootstrap import Style as BootstrapStyle
+    import ttkbootstrap as ttkb
 except Exception:  # Library not installed or failed to load
     BootstrapStyle = None
+    ttkb = None
+else:
+    ttk = ttkb
 
 # Convenience flag used throughout the class to enable ttkbootstrap enhancements
 USE_BOOTSTRAP = BootstrapStyle is not None
