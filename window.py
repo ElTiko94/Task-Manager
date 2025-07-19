@@ -179,9 +179,12 @@ class Window:
                 self.style = BootstrapStyle(master=self.root)
                 self.style.theme_use(theme)
             except Exception:
-                # Fallback to regular ttk in case of errors
+                # Fallback to regular ttk in case of errors. If the selected
+                # theme was the bootstrap default, revert to the default ttk
+                # theme; otherwise preserve the parent's choice.
                 self.style = ttk.Style(self.root)
-                theme = "clam"
+                if theme == "flatly":
+                    theme = "clam"
                 try:
                     self.style.theme_use(theme)
                 except Exception:
