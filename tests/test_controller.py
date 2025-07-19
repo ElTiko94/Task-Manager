@@ -1,8 +1,11 @@
-import os, sys
 import pytest
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from task import Task
-from controller import TaskController, InvalidTaskIndexError
+from helpers import load_module
+
+task = load_module("task")
+controller_mod = load_module("controller")
+Task = task.Task
+TaskController = controller_mod.TaskController
+InvalidTaskIndexError = controller_mod.InvalidTaskIndexError
 
 
 def create_controller():
