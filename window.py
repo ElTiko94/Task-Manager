@@ -166,6 +166,8 @@ class Window:
         self.root = root
         self.task_list = controller.get_sub_tasks()
         self.controller = controller
+        # Expose current save path for convenience
+        self.file_path = controller.save_path
         self.parent_window = parent_window
         self.name = controller.get_task_name()
 

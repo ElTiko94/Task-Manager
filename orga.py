@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     main_tasks = load_tasks(file_path)
 
-    controller = TaskController(main_tasks)
+    controller = TaskController(main_tasks, save_path=file_path)
     window = Window(root, controller)
     root.protocol("WM_DELETE_WINDOW", lambda: on_closing(main_tasks, root, file_path))
     root.mainloop()
