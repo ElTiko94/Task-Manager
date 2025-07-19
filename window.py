@@ -32,39 +32,41 @@ else:
         builder = ttkb.style.StyleBuilderTTK
     except Exception:
         builder = None
-    if builder is not None and not hasattr(builder, "create_date_frame_style"):
+    if builder is not None:
         def _ignore(self, style, **kw):
             if hasattr(self, "style"):
                 self.style.configure(style, **kw)
 
-        # Older ttkbootstrap versions shipped before tkcalendar support was
-        # added.  ``tkcalendar`` looks for several ``create_date_*`` methods
-        # when applying its themed styles.  Define benign fallbacks for all of
-        # them so that style creation simply configures the style without
-        # raising ``AttributeError`` when these methods are missing.
-        missing = [
+        # ``tkcalendar`` expects several ``create_date_*`` methods on the style
+        # builder. Older versions of ``ttkbootstrap`` implemented only a subset
+        # of these.  Patch any that are missing so that applying themed styles
+        # with tkcalendar doesn't fail.
+        missing = []
+        for name in [
             "create_date_frame_style",
             "create_date_toplevel_style",
             "create_date_entry_style",
             "create_date_label_style",
-        ]
-        for name in missing:
-            setattr(builder, name, _ignore)
+        ]:
+            if not hasattr(builder, name):
+                setattr(builder, name, _ignore)
+                missing.append(name)
 
-        # ``name_to_method`` resolves method names dynamically and will raise
-        # ``AttributeError`` if a method is absent.  Wrap it so unknown style
-        # methods fall back to ``_ignore`` instead.
-        orig_name_to_method = builder.name_to_method
+        if missing:
+            # ``name_to_method`` resolves method names dynamically and will
+            # raise ``AttributeError`` when a method is absent. Wrap it so
+            # unknown style methods fall back to ``_ignore`` instead.
+            orig_name_to_method = builder.name_to_method
 
-        def _safe_name_to_method(self, name):
-            try:
-                return orig_name_to_method(self, name)
-            except AttributeError:
-                if name in missing:
-                    return _ignore
-                raise
+            def _safe_name_to_method(self, name):
+                try:
+                    return orig_name_to_method(self, name)
+                except AttributeError:
+                    if name in missing:
+                        return _ignore
+                    raise
 
-        builder.name_to_method = _safe_name_to_method
+            builder.name_to_method = _safe_name_to_method
 
 # Convenience flag used throughout the class to enable ttkbootstrap enhancements
 USE_BOOTSTRAP = BootstrapStyle is not None
