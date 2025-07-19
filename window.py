@@ -31,7 +31,7 @@ import calendar as _calendar
 import datetime as _datetime
 
 try:
-    from tkcalendar import DateEntry
+    from tkcalendar import DateEntry as _CalendarDateEntry
 except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
 
     class _SimpleCalendar(ttk.Frame):
@@ -126,6 +126,17 @@ except ModuleNotFoundError:  # Fallback when tkcalendar is unavailable
             if self._popup is not None:
                 self._popup.destroy()
                 self._popup = None
+
+else:
+    class DateEntry(_CalendarDateEntry):
+        """Safe DateEntry wrapper to handle early style configuration."""
+
+        def configure(self, *args, **kwargs):
+            if hasattr(self, "_calendar"):
+                return _CalendarDateEntry.configure(self, *args, **kwargs)
+            return _ttk.Entry.configure(self, *args, **kwargs)
+
+        config = configure
 
 
 if not hasattr(ttk, "Listbox"):
