@@ -204,6 +204,11 @@ class Window:
             file_menu.add_command(label="Import from ICS", command=self.import_tasks_ics)
             menubar.add_cascade(label="File", menu=file_menu)
 
+            edit_menu = tk.Menu(menubar, tearoff=0)
+            edit_menu.add_command(label="Undo", command=self.undo)
+            edit_menu.add_command(label="Redo", command=self.redo)
+            menubar.add_cascade(label="Edit", menu=edit_menu)
+
             view_menu = tk.Menu(menubar, tearoff=0)
             for theme in self.style.theme_names():
                 view_menu.add_command(
@@ -630,6 +635,26 @@ class Window:
         self.refresh_window()
         if self.parent_window is not None:
             self.parent_window.refresh_window()
+
+    # --- Undo/Redo ------------------------------------------------------
+
+    def undo(self):
+        """Undo the last action via the controller and refresh."""
+        try:
+            self.controller.undo()
+        finally:
+            self.refresh_window()
+            if self.parent_window is not None:
+                self.parent_window.refresh_window()
+
+    def redo(self):
+        """Redo the last undone action via the controller and refresh."""
+        try:
+            self.controller.redo()
+        finally:
+            self.refresh_window()
+            if self.parent_window is not None:
+                self.parent_window.refresh_window()
 
     def export_tasks(self):
         """Prompt for a path and export tasks as JSON."""

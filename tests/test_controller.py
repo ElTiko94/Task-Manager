@@ -69,3 +69,22 @@ def test_invalid_index_operations():
         c.delete_task(2)
     with pytest.raises(InvalidTaskIndexError):
         c.mark_task_completed(-1)
+
+
+def test_undo_and_redo_add():
+    c = create_controller()
+    c.add_task('A')
+    c.undo()
+    assert c.get_sub_tasks() == []
+    c.redo()
+    assert [t.name for t in c.get_sub_tasks()] == ['A']
+
+
+def test_undo_and_redo_edit():
+    c = create_controller()
+    c.add_task('A')
+    c.edit_task(0, 'B')
+    c.undo()
+    assert c.get_sub_tasks()[0].name == 'A'
+    c.redo()
+    assert c.get_sub_tasks()[0].name == 'B'
