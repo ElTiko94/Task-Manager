@@ -87,59 +87,77 @@ def load_tasks_from_csv(path):
         with open(path, newline="", encoding="utf-8") as fh:
             reader = csv.reader(fh)
             header = next(reader, None)
-            rows = list(reader)
-        if not rows:
-            return Task("Main")
+            depth_index = (
+                header.index("Depth") if header and "Depth" in header else None
+            )
 
-        if header and "Depth" in header:
-            depth_index = header.index("Depth")
-        else:
-            depth_index = None
+            first_row = next(reader, None)
+            if first_row is None:
+                return Task("Main")
 
-        if depth_index is None:
-            # Legacy format without depth information
-            root_row = rows[0]
-            name, due, prio, completed = root_row[:4]
-            priority = int(prio) if prio else None
-            completed = bool(int(completed)) if completed else False
-            root = Task(name, due_date=due or None, priority=priority, completed=completed)
-            for row in rows[1:]:
-                try:
-                    r_name, r_due, r_prio, r_comp = row[:4]
-                except ValueError:
-                    continue
-                r_priority = int(r_prio) if r_prio else None
-                r_completed = bool(int(r_comp)) if r_comp else False
-                root.add_sub_task(
-                    Task(r_name, due_date=r_due or None, priority=r_priority, completed=r_completed)
-                )
-            return root
-
-        stack = []
-        root = None
-        for row in rows:
-            try:
+            def _parse(row):
                 name, due, prio, comp = row[:4]
-                depth = int(row[depth_index]) if len(row) > depth_index and row[depth_index] != "" else 0
-            except (ValueError, IndexError):
-                continue
-            priority = int(prio) if prio else None
-            completed = bool(int(comp)) if comp else False
-            task = Task(name, due_date=due or None, priority=priority, completed=completed)
-            if depth == 0:
-                root = task
-                stack = [task]
-                continue
-            while len(stack) > depth:
-                stack.pop()
-            parent = stack[-1] if stack else None
-            if parent is None:
-                root = task
-                stack = [task]
-            else:
+                priority = int(prio) if prio else None
+                completed = bool(int(comp)) if comp else False
+                return name, due, priority, completed
+
+            if depth_index is None:
+                name, due, priority, completed = _parse(first_row)
+                root = Task(
+                    name, due_date=due or None, priority=priority, completed=completed
+                )
+                for row in reader:
+                    try:
+                        r_name, r_due, r_prio, r_comp = row[:4]
+                    except ValueError:
+                        continue
+                    r_priority = int(r_prio) if r_prio else None
+                    r_completed = bool(int(r_comp)) if r_comp else False
+                    root.add_sub_task(
+                        Task(
+                            r_name,
+                            due_date=r_due or None,
+                            priority=r_priority,
+                            completed=r_completed,
+                        )
+                    )
+                return root
+
+            stack = []
+            root = None
+
+            def handle(row, current_stack):
+                try:
+                    name, due, prio, comp = row[:4]
+                    depth = (
+                        int(row[depth_index])
+                        if len(row) > depth_index and row[depth_index] != ""
+                        else 0
+                    )
+                except (ValueError, IndexError):
+                    return None
+                priority = int(prio) if prio else None
+                completed = bool(int(comp)) if comp else False
+                task = Task(
+                    name, due_date=due or None, priority=priority, completed=completed
+                )
+                while len(current_stack) > depth:
+                    current_stack.pop()
+                parent = current_stack[-1] if depth and current_stack else None
+                if parent is None:
+                    current_stack[:] = [task]
+                    return task
                 parent.add_sub_task(task)
-                stack.append(task)
-        return root if root is not None else Task("Main")
+                current_stack.append(task)
+                return current_stack[0]
+
+            root = handle(first_row, stack)
+            for row in reader:
+                r = handle(row, stack)
+                if r is not None:
+                    root = r
+
+            return root if root is not None else Task("Main")
     except Exception as err:
         logger.warning("Failed to load tasks from %s: %s", path, err)
         logger.warning("Warning: %s", err)
@@ -149,31 +167,38 @@ def load_tasks_from_csv(path):
 def load_tasks_from_ics(path):
     """Load tasks from an iCalendar file written by :py:meth:`save_tasks_to_ics`."""
     try:
-        with open(path, "r", encoding="utf-8") as fh:
-            lines = [line.strip() for line in fh]
         tasks = []
         current = None
-        for line in lines:
-            if line == "BEGIN:VTODO":
-                current = {}
-            elif line == "END:VTODO":
-                if current is not None:
-                    name = current.get("SUMMARY", "Unnamed")
-                    due = current.get("DUE")
-                    if due and len(due) >= 8:
-                        due = f"{due[0:4]}-{due[4:6]}-{due[6:8]}"
-                    prio = current.get("PRIORITY")
-                    try:
-                        prio_val = int(prio) if prio else None
-                    except ValueError:
-                        prio_val = None
-                    status = current.get("STATUS", "NEEDS-ACTION").upper()
-                    completed = status == "COMPLETED"
-                    tasks.append(Task(name, due_date=due or None, priority=prio_val, completed=completed))
-                current = None
-            elif current is not None and ":" in line:
-                key, value = line.split(":", 1)
-                current[key] = value
+        with open(path, "r", encoding="utf-8") as fh:
+            for raw in fh:
+                line = raw.strip()
+                if line == "BEGIN:VTODO":
+                    current = {}
+                elif line == "END:VTODO":
+                    if current is not None:
+                        name = current.get("SUMMARY", "Unnamed")
+                        due = current.get("DUE")
+                        if due and len(due) >= 8:
+                            due = f"{due[0:4]}-{due[4:6]}-{due[6:8]}"
+                        prio = current.get("PRIORITY")
+                        try:
+                            prio_val = int(prio) if prio else None
+                        except ValueError:
+                            prio_val = None
+                        status = current.get("STATUS", "NEEDS-ACTION").upper()
+                        completed = status == "COMPLETED"
+                        tasks.append(
+                            Task(
+                                name,
+                                due_date=due or None,
+                                priority=prio_val,
+                                completed=completed,
+                            )
+                        )
+                    current = None
+                elif current is not None and ":" in line:
+                    key, value = line.split(":", 1)
+                    current[key] = value
 
         if not tasks:
             return Task("Main")
