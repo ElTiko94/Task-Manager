@@ -63,6 +63,15 @@ def test_sort_tasks_by_due_date():
     assert [t.name for t in c.get_sub_tasks()] == ['Sooner', 'Later', 'NoDue']
 
 
+def test_sort_tasks_by_name():
+    c = create_controller()
+    c.add_task('b')
+    c.add_task('a')
+    c.add_task('c')
+    c.sort_tasks_by_name()
+    assert [t.name for t in c.get_sub_tasks()] == ['a', 'b', 'c']
+
+
 def test_invalid_index_operations():
     c = create_controller()
     c.add_task('Only')

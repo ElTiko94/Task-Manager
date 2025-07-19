@@ -294,6 +294,14 @@ class Window:
         )
         sort_due_btn.grid(row=1, column=2, sticky="ew", padx=2)
 
+        sort_name_btn = ttk.Button(
+            self.main_frame,
+            text="Sort by Name",
+            command=self.sort_tasks_by_name,
+            **btn_opts,
+        )
+        sort_name_btn.grid(row=1, column=3, sticky="ew", padx=2)
+
         self.tree = ttk.Treeview(self.main_frame, show="tree")
         self.tree.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=5)
         self.tree_items = {}
@@ -703,6 +711,13 @@ class Window:
     def sort_tasks_by_due_date(self):
         """Sort tasks by due date using the controller and refresh the view."""
         self.controller.sort_tasks_by_due_date()
+        self.refresh_window()
+        if self.parent_window is not None:
+            self.parent_window.refresh_window()
+
+    def sort_tasks_by_name(self):
+        """Sort tasks alphabetically using the controller and refresh the view."""
+        self.controller.sort_tasks_by_name()
         self.refresh_window()
         if self.parent_window is not None:
             self.parent_window.refresh_window()

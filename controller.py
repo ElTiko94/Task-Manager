@@ -203,6 +203,11 @@ class TaskController:
         self.task.sub_tasks.sort(key=lambda t: (t.due_date is None, t.due_date))
         self._auto_save()
 
+    def sort_tasks_by_name(self):
+        """Sort the controller's sub tasks alphabetically by name."""
+        self.task.sub_tasks.sort(key=lambda t: t.name.lower())
+        self._auto_save()
+
     # --- Undo/Redo support -------------------------------------------------
 
     def _apply_operation(self, operation):

@@ -505,6 +505,16 @@ def test_sort_by_due_date(monkeypatch):
     assert [item.split()[0] for item in win.tree.items] == ["Sooner", "Later", "NoDue"]
 
 
+def test_sort_by_name(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("b")
+    win.controller.add_task("a")
+    win.controller.add_task("c")
+    win.sort_tasks_by_name()
+    assert [t.name for t in win.controller.get_sub_tasks()] == ["a", "b", "c"]
+    assert [item.split()[0] for item in win.tree.items] == ["a", "b", "c"]
+
+
 def test_move_selected_up(monkeypatch):
     win = setup_window(monkeypatch)
     win.controller.add_task("A")

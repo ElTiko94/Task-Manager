@@ -11,6 +11,7 @@ The Task-Manager Application is a simple graphical user interface (GUI) applicat
 - Import and export tasks in CSV, JSON, or ICS formats from the File menu
 - Optional due dates and priority levels for tasks
 - Mark tasks as completed
+- Sort tasks by priority, due date, or name
 - Switch themes from the View menu
 
 ## Color Coding
@@ -49,13 +50,15 @@ The task list uses colors to highlight different states and priorities:
 
 5. **Saving Changes**: The application prompts you to save changes when you close the window. Click "Yes" to save changes or "No" to discard them.
 
-6. **Filtering Tasks**: Use the controls below the task list to filter. You can
+6. **Sorting Tasks**: Use the "Sort by Priority", "Sort by Due Date", or "Sort by Name" buttons to reorder the list.
+
+7. **Filtering Tasks**: Use the controls below the task list to filter. You can
    search by name, hide completed tasks, show only tasks due before or after a
    specific date, and display tasks with priority above or below a chosen
    threshold. Click "Apply Filter" to update the list.
-7. **Changing Themes**: Open the "View" menu and select a theme. When
+8. **Changing Themes**: Open the "View" menu and select a theme. When
    `ttkbootstrap` is installed, additional modern themes become available.
-8. **Import/Export**: Use the "File" menu to export tasks to CSV or ICS or to
+9. **Import/Export**: Use the "File" menu to export tasks to CSV or ICS or to
    import tasks from existing CSV/ICS files.
 
 ## File Structure
