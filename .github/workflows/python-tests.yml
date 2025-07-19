@@ -1,0 +1,23 @@
+name: Python package
+
+on:
+  push:
+    paths: ['**.py', 'tests/**', '.github/workflows/python-tests.yml', 'requirements.txt']
+  pull_request:
+    paths: ['**.py', 'tests/**', '.github/workflows/python-tests.yml', 'requirements.txt']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.11']
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: pytest -q
