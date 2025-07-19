@@ -761,11 +761,23 @@ class Window:
             return
 
         item = sel[0]
-        task, _parent = self.tree_items.get(item, (None, None))
+        task, parent = self.tree_items.get(item, (None, None))
         if task is None:
             return
 
-        task.completed = not task.completed
+        if parent is None:
+            idx = self.controller.get_sub_tasks().index(task)
+            if task.completed:
+                self.controller.mark_task_incomplete(idx)
+            else:
+                self.controller.mark_task_completed(idx)
+        else:
+            task.completed = not task.completed
+            try:
+                self.controller._auto_save()
+            except Exception:
+                pass
+
         self.refresh_window()
         if self.parent_window is not None:
             self.parent_window.refresh_window()

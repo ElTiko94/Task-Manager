@@ -3,6 +3,7 @@ from helpers import load_module
 task = load_module("task")
 controller_mod = load_module("controller")
 window = load_module("window")
+persistence = load_module("persistence")
 Task = task.Task
 TaskController = controller_mod.TaskController
 import datetime
@@ -879,3 +880,49 @@ def test_move_selected_task(monkeypatch):
     win.move_selected_task(-1)
     assert [t.name for t in win.controller.get_sub_tasks()] == ["B", "A"]
     assert [win.tree.nodes[i]["text"].split()[0] for i in win.tree.get_children()] == ["B", "A"]
+
+
+def test_toggle_completion_undo_redo(monkeypatch):
+    win = setup_window(monkeypatch)
+    win.controller.add_task("A")
+    win.refresh_window()
+
+    iid = win.tree.get_children()[0]
+    win.tree.selection_set(iid)
+    win.toggle_completion()
+    assert win.controller.get_sub_tasks()[0].completed
+
+    win.undo()
+    assert not win.controller.get_sub_tasks()[0].completed
+
+    win.redo()
+    assert win.controller.get_sub_tasks()[0].completed
+
+
+def test_toggle_completion_autosave(monkeypatch, tmp_path):
+    path = tmp_path / "tasks.json"
+    called = {}
+
+    def fake_save(task, file_path):
+        called['task'] = task
+        called['path'] = file_path
+
+    monkeypatch.setattr(persistence, "save_tasks_to_json", fake_save)
+    controller = TaskController(Task("Main"), save_path=path)
+    controller.add_task("A")
+    called.clear()
+
+    fake_tk = DummyTkModule()
+    monkeypatch.setattr(window, "tk", fake_tk)
+    monkeypatch.setattr(window, "ttk", fake_tk)
+    monkeypatch.setattr(window, "DateEntry", DummyEntry)
+    root = DummyRoot()
+    win = window.Window(root, controller)
+    win.refresh_window()
+
+    iid = win.tree.get_children()[0]
+    win.tree.selection_set(iid)
+    win.toggle_completion()
+
+    assert called.get('task') is controller.task
+    assert called.get('path') == path
