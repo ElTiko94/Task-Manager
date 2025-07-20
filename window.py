@@ -35,6 +35,18 @@ else:
     if builder is not None:
         def _ignore(self, style, **kw):
             if hasattr(self, "style"):
+                if hasattr(self.style, "layout"):
+                    try:
+                        base = self.style.layout("Toplevel")
+                    except Exception:
+                        try:
+                            base = self.style.layout("TFrame")
+                        except Exception:
+                            base = ""
+                    try:
+                        self.style.layout(style, base)
+                    except Exception:
+                        pass
                 self.style.configure(style, **kw)
 
         # ``tkcalendar`` expects several ``create_date_*`` methods on the style
