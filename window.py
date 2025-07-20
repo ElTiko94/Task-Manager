@@ -57,10 +57,18 @@ else:
             # raise ``AttributeError`` when a method is absent. Wrap it so
             # unknown style methods fall back to ``_ignore`` instead.
             orig_name_to_method = builder.name_to_method
+            try:
+                import inspect
+                _takes_self = len(inspect.signature(orig_name_to_method).parameters) > 1
+            except Exception:
+                _takes_self = True
 
             def _safe_name_to_method(self, name):
                 try:
-                    return orig_name_to_method(self, name)
+                    if _takes_self:
+                        return orig_name_to_method(self, name)
+                    else:
+                        return orig_name_to_method(name)
                 except AttributeError:
                     if name in missing:
                         return _ignore
