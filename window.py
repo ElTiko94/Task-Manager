@@ -8,19 +8,38 @@ Usage:
     This module provides the Window class for managing the main application window of a to-do list.
 """
 
+import sys
 import tkinter as tk
 import tkinter.ttk as _ttk
 ttk = _ttk  # default ttk module
 
-# Try to load ttkbootstrap for optional theming enhancements.  When available
-# we use its ``Style`` class and widget set so ``bootstyle`` keywords work.
-try:
-    from ttkbootstrap import Style as BootstrapStyle
-    import ttkbootstrap as ttkb
-except Exception:  # Library not installed or failed to load
-    BootstrapStyle = None
-    ttkb = None
+# Try to load ttkbootstrap for optional theming enhancements.  On
+# Python ≥ 3.10 any recent version works.  On Python 3.8/3.9 only the
+# 1.10.x series is compatible; newer releases raise ``TypeError`` when the
+# style class initialises.  If an incompatible or missing version is
+# detected we silently fall back to plain ``ttk``.
+
+BootstrapStyle = None
+ttkb = None
+if sys.version_info >= (3, 10):
+    try:
+        from ttkbootstrap import Style as BootstrapStyle
+        import ttkbootstrap as ttkb
+    except Exception:
+        pass
 else:
+    try:
+        import ttkbootstrap as ttkb
+        ver = getattr(ttkb, "__version__", "")
+        if not ver or ver.startswith("1.10"):
+            from ttkbootstrap import Style as BootstrapStyle
+        else:
+            raise TypeError("incompatible ttkbootstrap")
+    except Exception:
+        ttkb = None
+        BootstrapStyle = None
+
+if ttkb is not None:
     ttk = ttkb
     # Provide compatibility shims for older versions of ``ttkbootstrap``
     # that do not implement tkcalendar-specific style builders.  The
@@ -227,27 +246,23 @@ else:
         """Safe DateEntry wrapper to handle early style configuration."""
 
         def __init__(self, *args, **kwargs):
+            style = ttk.Style()
             try:
-                _CalendarDateEntry.__init__(self, *args, **kwargs)
-            except tk.TclError as exc:
-                if "Date.Toplevel" in str(exc):
-                    # The themed ``Date.Toplevel`` style may not exist with
-                    # some combinations of ``tkcalendar`` and ``ttkbootstrap``.
-                    # Create a basic layout derived from ``Toplevel`` (or
-                    # ``TFrame`` if unavailable) and try again.
-                    style = ttk.Style()
-                    if not style.layout("Date.Toplevel"):
-                        try:
-                            base = style.layout("Toplevel")
-                        except Exception:
-                            try:
-                                base = style.layout("TFrame")
-                            except Exception:
-                                base = ""
-                        style.layout("Date.Toplevel", base)
-                    _CalendarDateEntry.__init__(self, *args, **kwargs)
-                else:
-                    raise
+                style.layout("Date.Toplevel")
+            except tk.TclError:
+                try:
+                    base = style.layout("Toplevel")
+                except tk.TclError:
+                    try:
+                        base = style.layout("TFrame")
+                    except tk.TclError:
+                        base = ""
+                try:
+                    style.layout("Date.Toplevel", base)
+                except tk.TclError:
+                    pass
+
+            _CalendarDateEntry.__init__(self, *args, **kwargs)
 
         def configure(self, *args, **kwargs):
             try:

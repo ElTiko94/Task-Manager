@@ -22,13 +22,22 @@ The task list uses colors to highlight different states and priorities:
 - **Orange**: priority `1` tasks
 - **Yellow**: priority `2` tasks
 
-## Requirements
-- Python 3.7
+- Python 3.8 or later
 - Tkinter (should be included with Python installation; on some Linux
   systems you may need the `python3-tk` package)
 - Additional Python dependencies are listed in `requirements.txt`
   (`tkcalendar` for calendar pop-ups and `ttkbootstrap` for optional
   modern themes)
+
+### Python Compatibility
+The program dynamically chooses whether to use the modern **ttkbootstrap**
+widgets.  On Python&nbsp;≥&nbsp;3.10 any recent version of the library works
+without additional patches.  When running on Python&nbsp;3.8 or 3.9 the
+application tries to import **ttkbootstrap**&nbsp;1.10.x and automatically
+creates the missing ``Date.Toplevel`` style used by ``tkcalendar``.  If a
+newer version of **ttkbootstrap** raises ``TypeError`` during initialisation or
+the library is not available at all, the program falls back to plain ttk so the
+interface still functions (just without the bootstrap styling).
 
 ## Installation
 1. Clone or download the repository to your local machine.
