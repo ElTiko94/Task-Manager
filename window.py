@@ -31,7 +31,7 @@ else:
     try:
         import ttkbootstrap as ttkb
         ver = getattr(ttkb, "__version__", "")
-        if ver.startswith("1.10"):
+        if not ver or ver.startswith("1.10"):
             from ttkbootstrap import Style as BootstrapStyle
         else:
             raise TypeError("incompatible ttkbootstrap")
