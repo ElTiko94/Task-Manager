@@ -246,35 +246,23 @@ else:
         """Safe DateEntry wrapper to handle early style configuration."""
 
         def __init__(self, *args, **kwargs):
+            style = ttk.Style()
             try:
-                _CalendarDateEntry.__init__(self, *args, **kwargs)
-            except tk.TclError as exc:
-                if "Date.Toplevel" in str(exc):
-                    # The themed ``Date.Toplevel`` style may not exist with
-                    # some combinations of ``tkcalendar`` and ``ttkbootstrap``.
-                    # Create a basic layout derived from ``Toplevel`` (or
-                    # ``TFrame`` if unavailable) and try again.
-                    style = ttk.Style()
+                style.layout("Date.Toplevel")
+            except tk.TclError:
+                try:
+                    base = style.layout("Toplevel")
+                except tk.TclError:
                     try:
-                        style.layout("Date.Toplevel")
-                        missing = False
+                        base = style.layout("TFrame")
                     except tk.TclError:
-                        missing = True
-                    if missing:
-                        try:
-                            base = style.layout("Toplevel")
-                        except tk.TclError:
-                            try:
-                                base = style.layout("TFrame")
-                            except tk.TclError:
-                                base = ""
-                        try:
-                            style.layout("Date.Toplevel", base)
-                        except tk.TclError:
-                            pass
-                    _CalendarDateEntry.__init__(self, *args, **kwargs)
-                else:
-                    raise
+                        base = ""
+                try:
+                    style.layout("Date.Toplevel", base)
+                except tk.TclError:
+                    pass
+
+            _CalendarDateEntry.__init__(self, *args, **kwargs)
 
         def configure(self, *args, **kwargs):
             try:
