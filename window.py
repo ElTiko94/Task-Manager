@@ -226,6 +226,29 @@ else:
     class DateEntry(_CalendarDateEntry):
         """Safe DateEntry wrapper to handle early style configuration."""
 
+        def __init__(self, *args, **kwargs):
+            try:
+                _CalendarDateEntry.__init__(self, *args, **kwargs)
+            except tk.TclError as exc:
+                if "Date.Toplevel" in str(exc):
+                    # The themed ``Date.Toplevel`` style may not exist with
+                    # some combinations of ``tkcalendar`` and ``ttkbootstrap``.
+                    # Create a basic layout derived from ``Toplevel`` (or
+                    # ``TFrame`` if unavailable) and try again.
+                    style = ttk.Style()
+                    if not style.layout("Date.Toplevel"):
+                        try:
+                            base = style.layout("Toplevel")
+                        except Exception:
+                            try:
+                                base = style.layout("TFrame")
+                            except Exception:
+                                base = ""
+                        style.layout("Date.Toplevel", base)
+                    _CalendarDateEntry.__init__(self, *args, **kwargs)
+                else:
+                    raise
+
         def configure(self, *args, **kwargs):
             try:
                 return _CalendarDateEntry.configure(self, *args, **kwargs)
