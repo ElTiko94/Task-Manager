@@ -255,15 +255,23 @@ else:
                     # Create a basic layout derived from ``Toplevel`` (or
                     # ``TFrame`` if unavailable) and try again.
                     style = ttk.Style()
-                    if not style.layout("Date.Toplevel"):
+                    try:
+                        style.layout("Date.Toplevel")
+                        missing = False
+                    except tk.TclError:
+                        missing = True
+                    if missing:
                         try:
                             base = style.layout("Toplevel")
-                        except Exception:
+                        except tk.TclError:
                             try:
                                 base = style.layout("TFrame")
-                            except Exception:
+                            except tk.TclError:
                                 base = ""
-                        style.layout("Date.Toplevel", base)
+                        try:
+                            style.layout("Date.Toplevel", base)
+                        except tk.TclError:
+                            pass
                     _CalendarDateEntry.__init__(self, *args, **kwargs)
                 else:
                     raise
