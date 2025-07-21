@@ -8,19 +8,38 @@ Usage:
     This module provides the Window class for managing the main application window of a to-do list.
 """
 
+import sys
 import tkinter as tk
 import tkinter.ttk as _ttk
 ttk = _ttk  # default ttk module
 
-# Try to load ttkbootstrap for optional theming enhancements.  When available
-# we use its ``Style`` class and widget set so ``bootstyle`` keywords work.
-try:
-    from ttkbootstrap import Style as BootstrapStyle
-    import ttkbootstrap as ttkb
-except Exception:  # Library not installed or failed to load
-    BootstrapStyle = None
-    ttkb = None
+# Try to load ttkbootstrap for optional theming enhancements.  On
+# Python ≥ 3.10 any recent version works.  On Python 3.8/3.9 only the
+# 1.10.x series is compatible; newer releases raise ``TypeError`` when the
+# style class initialises.  If an incompatible or missing version is
+# detected we silently fall back to plain ``ttk``.
+
+BootstrapStyle = None
+ttkb = None
+if sys.version_info >= (3, 10):
+    try:
+        from ttkbootstrap import Style as BootstrapStyle
+        import ttkbootstrap as ttkb
+    except Exception:
+        pass
 else:
+    try:
+        import ttkbootstrap as ttkb
+        ver = getattr(ttkb, "__version__", "")
+        if ver.startswith("1.10"):
+            from ttkbootstrap import Style as BootstrapStyle
+        else:
+            raise TypeError("incompatible ttkbootstrap")
+    except Exception:
+        ttkb = None
+        BootstrapStyle = None
+
+if ttkb is not None:
     ttk = ttkb
     # Provide compatibility shims for older versions of ``ttkbootstrap``
     # that do not implement tkcalendar-specific style builders.  The
